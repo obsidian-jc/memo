@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="메모">
+<title>메모</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --bg: #0e0e0e;
+    --text: #e8e8e0;
+    --muted: #555;
+    --accent: #c8b97a;
+    --border: #222;
+    --time-color: #c8b97a;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, 'Helvetica Neue', sans-serif;
+    overscroll-behavior: none;
+  }
+
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  #toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px 10px;
+    border-bottom: 0.5px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  #date-label {
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+
+  #btn-copy {
+    font-size: 13px;
+    color: var(--accent);
+    background: none;
+    border: 0.5px solid var(--accent);
+    border-radius: 6px;
+    padding: 5px 12px;
+    cursor: pointer;
+    opacity: 0.85;
+  }
+  #btn-copy:active { opacity: 0.5; }
+
+  #editor {
+    flex: 1;
+    width: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 17px;
+    line-height: 1.85;
+    padding: 20px 18px 40px;
+    border: none;
+    outline: none;
+    resize: none;
+    caret-color: var(--accent);
+    font-family: -apple-system, 'Helvetica Neue', sans-serif;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #editor::placeholder {
+    color: var(--muted);
+    font-size: 15px;
+  }
+
+  #toast {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--accent);
+    color: #0e0e0e;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 20px;
+    border-radius: 20px;
+    opacity: 0;
+    transition: all 0.25s ease;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  #toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="toolbar">
+    <span id="date-label"></span>
+    <button id="btn-copy" onclick="copyAll()">전체 복사</button>
+  </div>
+  <textarea id="editor" placeholder="그냥 막 쓰세요.&#10;&#10;* 치면 시간이 찍혀요."></textarea>
+</div>
+<div id="toast">복사됐어요</div>
+
+<script>
+const STORAGE_KEY = 'memo_v1';
+const editor = document.getElementById('editor');
+const dateLabel = document.getElementById('date-label');
+
+function todayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function formatDate(d) {
+  return new Date(d + 'T00:00:00').toLocaleDateString('ko-KR', {
+    month: 'long', day: 'numeric', weekday: 'short'
+  });
+}
+
+function now() {
+  return new Date().toTimeString().slice(0, 5);
+}
+
+function load() {
+  const today = todayKey();
+  dateLabel.textContent = formatDate(today);
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (data[today]) editor.value = data[today];
+  } catch(e) {}
+}
+
+function save() {
+  const today = todayKey();
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const data = raw ? JSON.parse(raw) : {};
+    data[today] = editor.value;
+    // 최근 60일치만 유지
+    const keys = Object.keys(data).sort();
+    if (keys.length > 60) keys.slice(0, keys.length - 60).forEach(k => delete data[k]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch(e) {}
+}
+
+function copyAll() {
+  const text = editor.value.trim();
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => showToast('복사됐어요'));
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+// * 입력시 시간 자동 삽입
+editor.addEventListener('keydown', function(e) {
+  if (e.key !== '*') return;
+  e.preventDefault();
+  const time = now();
+  const pos = editor.selectionStart;
+  const val = editor.value;
+  // 현재 줄이 비어있는지 확인
+  const before = val.slice(0, pos);
+  const lineStart = before.lastIndexOf('\n') + 1;
+  const currentLine = before.slice(lineStart);
+  let insert = '';
+  if (currentLine.trim() === '') {
+    insert = `\n── ${time} ──\n`;
+  } else {
+    insert = `\n\n── ${time} ──\n`;
+  }
+  editor.value = val.slice(0, pos) + insert + val.slice(pos);
+  const newPos = pos + insert.length;
+  editor.selectionStart = editor.selectionEnd = newPos;
+  save();
+});
+
+editor.addEventListener('input', save);
+
+// 날짜 자정 넘어가면 새 페이지
+let lastDay = todayKey();
+setInterval(() => {
+  const today = todayKey();
+  if (today !== lastDay) {
+    lastDay = today;
+    editor.value = '';
+    dateLabel.textContent = formatDate(today);
+  }
+}, 60000);
+
+load();
+editor.focus();
+</script>
+</body>
+</html>
