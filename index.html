@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="메모">
+<title>메모</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --bg: #1a1a2e;
+    --bg2: #16213e;
+    --text: #f0f0e8;
+    --muted: #8899aa;
+    --accent: #4fc3f7;
+    --accent2: #81d4fa;
+    --border: #2a3a4a;
+    --btn-bg: #0f3460;
+    --counter: #aabbcc;
+    --overlay: rgba(10,15,30,0.96);
+  }
+
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, 'Helvetica Neue', sans-serif; overscroll-behavior: none; }
+
+  #app { display: flex; flex-direction: column; height: 100dvh; max-width: 680px; margin: 0 auto; }
+
+  /* 툴바 */
+  #toolbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 10px; border-bottom: 0.5px solid var(--border); flex-shrink: 0; gap: 8px; }
+  #date-label { font-size: 14px; color: var(--accent2); font-weight: 600; letter-spacing: 0.03em; }
+  #clock { font-size: 18px; font-weight: 700; color: #fff; letter-spacing: 0.06em; font-variant-numeric: tabular-nums; min-width: 52px; text-align: center; }
+  .btn-row { display: flex; gap: 6px; align-items: center; }
+  .tbtn { font-size: 12px; color: var(--accent); background: var(--btn-bg); border: 0.5px solid var(--accent); border-radius: 6px; padding: 5px 11px; cursor: pointer; white-space: nowrap; transition: opacity 0.15s; }
+  .tbtn:active { opacity: 0.5; }
+
+  /* 에디터 */
+  #editor { flex: 1; width: 100%; background: var(--bg); color: var(--text); font-size: 17px; line-height: 1.9; padding: 18px 18px 20px; border: none; outline: none; resize: none; caret-color: var(--accent); font-family: -apple-system, 'Helvetica Neue', sans-serif; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  #editor::placeholder { color: var(--muted); font-size: 15px; line-height: 2.2; }
+
+  /* 하단 액션바 */
+  #actionbar { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; border-top: 0.5px solid var(--border); flex-shrink: 0; background: var(--bg2); gap: 8px; }
+  #counter { font-size: 12px; color: var(--counter); }
+  .abtn { font-size: 22px; background: none; border: none; cursor: pointer; padding: 4px 6px; border-radius: 8px; transition: background 0.15s; line-height: 1; }
+  .abtn:active { background: #2a3a4a; }
+  .abtn.recording { animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* 토스트 */
+  #toast { position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--accent); color: #0a0a1a; font-size: 13px; font-weight: 700; padding: 9px 22px; border-radius: 20px; opacity: 0; transition: all 0.25s ease; pointer-events: none; white-space: nowrap; z-index: 999; }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* 오버레이 공통 */
+  .overlay { position: fixed; inset: 0; background: var(--overlay); z-index: 100; display: none; flex-direction: column; max-width: 680px; margin: 0 auto; }
+  .overlay.open { display: flex; }
+  .ov-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; border-bottom: 0.5px solid var(--border); flex-shrink: 0; }
+  .ov-title { font-size: 15px; font-weight: 600; color: var(--accent2); }
+  .ov-close { font-size: 22px; background: none; border: none; color: var(--muted); cursor: pointer; padding: 2px 6px; }
+  .ov-body { flex: 1; overflow-y: auto; padding: 16px 18px; }
+
+  /* 검색 오버레이 */
+  #search-input { width: 100%; background: var(--bg2); border: 0.5px solid var(--border); border-radius: 8px; padding: 10px 14px; font-size: 15px; color: var(--text); outline: none; margin-bottom: 14px; }
+  #search-input:focus { border-color: var(--accent); }
+  .search-result { border-left: 2px solid var(--accent); padding: 10px 12px; margin-bottom: 10px; border-radius: 0 6px 6px 0; background: var(--bg2); cursor: pointer; }
+  .search-result:active { opacity: 0.7; }
+  .sr-date { font-size: 11px; color: var(--accent2); margin-bottom: 4px; }
+  .sr-text { font-size: 14px; color: var(--text); line-height: 1.6; white-space: pre-wrap; word-break: break-all; }
+  .sr-text mark { background: #4fc3f740; color: var(--accent2); border-radius: 2px; }
+  #search-empty { font-size: 14px; color: var(--muted); text-align: center; padding: 2rem 0; }
+
+  /* 어제 메모 오버레이 */
+  #yesterday-content { font-size: 16px; line-height: 1.9; color: var(--text); white-space: pre-wrap; word-break: break-all; }
+  #yesterday-empty { font-size: 14px; color: var(--muted); text-align: center; padding: 2rem 0; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="toolbar">
+    <span id="date-label"></span>
+    <span id="clock"></span>
+    <div class="btn-row">
+      <button class="tbtn" onclick="copyAll()">전체복사</button>
+      <button class="tbtn" onclick="clearToday()">지우기</button>
+    </div>
+  </div>
+
+  <textarea id="editor" placeholder="그냥 막 쓰세요.&#10;&#10;* 치면 시간 구분선이 생겨요."></textarea>
+
+  <div id="actionbar">
+    <span id="counter">0자</span>
+    <div class="btn-row">
+      <button class="abtn" id="mic-btn" onclick="toggleVoice()" title="음성 입력">🎙️</button>
+      <button class="abtn" onclick="openYesterday()" title="어제 메모">📅</button>
+      <button class="abtn" onclick="openSearch()" title="검색">🔍</button>
+    </div>
+  </div>
+</div>
+
+<!-- 검색 오버레이 -->
+<div class="overlay" id="search-overlay">
+  <div class="ov-header">
+    <span class="ov-title">🔍 메모 검색</span>
+    <button class="ov-close" onclick="closeOverlay('search-overlay')">✕</button>
+  </div>
+  <div class="ov-body">
+    <input type="text" id="search-input" placeholder="검색어 입력..." oninput="doSearch(this.value)" autocomplete="off">
+    <div id="search-results"></div>
+  </div>
+</div>
+
+<!-- 어제 메모 오버레이 -->
+<div class="overlay" id="yesterday-overlay">
+  <div class="ov-header">
+    <span class="ov-title" id="yesterday-title">📅 어제 메모</span>
+    <button class="ov-close" onclick="closeOverlay('yesterday-overlay')">✕</button>
+  </div>
+  <div class="ov-body">
+    <div id="yesterday-content"></div>
+    <div id="yesterday-empty" style="display:none">어제 메모가 없어요</div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'memo_v1';
+const editor = document.getElementById('editor');
+const dateLabel = document.getElementById('date-label');
+const clockEl = document.getElementById('clock');
+const counterEl = document.getElementById('counter');
+
+// ── 날짜 유틸 ──
+function todayKey() { return new Date().toISOString().slice(0, 10); }
+function yesterdayKey() {
+  const d = new Date(); d.setDate(d.getDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+function formatDate(d) {
+  return new Date(d + 'T00:00:00').toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' });
+}
+function nowTime() { return new Date().toTimeString().slice(0, 5); }
+
+// ── 시계 ──
+function updateClock() {
+  const t = new Date();
+  clockEl.textContent = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
+}
+
+// ── 카운터 ──
+function updateCounter() {
+  const len = editor.value.length;
+  const lines = editor.value ? editor.value.split('\n').length : 0;
+  counterEl.textContent = `${len}자 · ${lines}줄`;
+}
+
+// ── 저장/로드 ──
+function getAllData() {
+  try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : {}; } catch(e) { return {}; }
+}
+function load() {
+  dateLabel.textContent = formatDate(todayKey());
+  const data = getAllData();
+  if (data[todayKey()]) editor.value = data[todayKey()];
+  updateCounter();
+}
+function save() {
+  const today = todayKey();
+  const data = getAllData();
+  data[today] = editor.value;
+  const keys = Object.keys(data).sort();
+  if (keys.length > 60) keys.slice(0, keys.length - 60).forEach(k => delete data[k]);
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e) {}
+  updateCounter();
+}
+
+// ── 복사/지우기 ──
+function copyAll() {
+  const text = editor.value.trim();
+  if (!text) { showToast('내용이 없어요'); return; }
+  navigator.clipboard.writeText(text).then(() => showToast('복사됐어요 👍'));
+}
+function clearToday() {
+  if (!editor.value.trim()) return;
+  if (confirm('오늘 메모를 지울까요?')) { editor.value = ''; save(); showToast('지웠어요'); }
+}
+
+// ── 토스트 ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+// ── 오버레이 ──
+function closeOverlay(id) { document.getElementById(id).classList.remove('open'); }
+
+// ── 어제 메모 ──
+function openYesterday() {
+  const ykey = yesterdayKey();
+  const data = getAllData();
+  const content = data[ykey];
+  document.getElementById('yesterday-title').textContent = '📅 ' + formatDate(ykey);
+  const el = document.getElementById('yesterday-content');
+  const empty = document.getElementById('yesterday-empty');
+  if (content && content.trim()) {
+    el.textContent = content;
+    el.style.display = 'block';
+    empty.style.display = 'none';
+  } else {
+    el.style.display = 'none';
+    empty.style.display = 'block';
+  }
+  document.getElementById('yesterday-overlay').classList.add('open');
+}
+
+// ── 검색 ──
+function openSearch() {
+  document.getElementById('search-input').value = '';
+  document.getElementById('search-results').innerHTML = '';
+  document.getElementById('search-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('search-input').focus(), 100);
+}
+
+function doSearch(query) {
+  const q = query.trim();
+  const container = document.getElementById('search-results');
+  if (!q) { container.innerHTML = ''; return; }
+  const data = getAllData();
+  const results = [];
+  Object.entries(data).sort((a,b) => b[0].localeCompare(a[0])).forEach(([date, text]) => {
+    if (!text) return;
+    const lines = text.split('\n');
+    lines.forEach((line, i) => {
+      if (line.toLowerCase().includes(q.toLowerCase())) {
+        // 앞뒤 줄 포함 컨텍스트
+        const ctx = lines.slice(Math.max(0, i-1), i+2).join('\n');
+        results.push({ date, ctx });
+      }
+    });
+  });
+  // 중복 날짜 제거 (같은 날 여러 줄 히트)
+  const seen = new Set();
+  const unique = results.filter(r => { if (seen.has(r.date + r.ctx)) return false; seen.add(r.date + r.ctx); return true; });
+
+  if (!unique.length) {
+    container.innerHTML = `<div id="search-empty">"${q}" 검색 결과가 없어요</div>`;
+    return;
+  }
+  container.innerHTML = unique.slice(0, 30).map(r => {
+    const highlighted = r.ctx.replace(new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), m => `<mark>${m}</mark>`);
+    return `<div class="search-result">
+      <div class="sr-date">${formatDate(r.date)}</div>
+      <div class="sr-text">${highlighted}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── 음성 입력 ──
+let recognition = null;
+let isRecording = false;
+const micBtn = document.getElementById('mic-btn');
+
+function toggleVoice() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    showToast('이 브라우저는 음성 입력을 지원하지 않아요');
+    return;
+  }
+  if (isRecording) {
+    recognition.stop();
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.lang = 'ko-KR';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  recognition.onstart = () => {
+    isRecording = true;
+    micBtn.classList.add('recording');
+    showToast('🎙️ 말씀하세요...');
+  };
+  recognition.onresult = (e) => {
+    const transcript = e.results[0][0].transcript;
+    const pos = editor.selectionStart;
+    const val = editor.value;
+    const before = val.slice(0, pos);
+    const needSpace = before.length > 0 && !before.endsWith('\n') ? ' ' : '';
+    editor.value = before + needSpace + transcript + val.slice(pos);
+    editor.selectionStart = editor.selectionEnd = pos + needSpace.length + transcript.length;
+    save();
+    showToast('입력됐어요 ✅');
+  };
+  recognition.onerror = () => { showToast('음성 인식 실패'); };
+  recognition.onend = () => {
+    isRecording = false;
+    micBtn.classList.remove('recording');
+  };
+  recognition.start();
+}
+
+// ── * → 시간 구분선 ──
+editor.addEventListener('keydown', function(e) {
+  if (e.key !== '*') return;
+  e.preventDefault();
+  const time = nowTime();
+  const pos = editor.selectionStart;
+  const val = editor.value;
+  const before = val.slice(0, pos);
+  const lineStart = before.lastIndexOf('\n') + 1;
+  const currentLine = before.slice(lineStart);
+  const insert = currentLine.trim() === '' ? `\n── ${time} ──\n` : `\n\n── ${time} ──\n`;
+  editor.value = val.slice(0, pos) + insert + val.slice(pos);
+  editor.selectionStart = editor.selectionEnd = pos + insert.length;
+  save();
+});
+
+editor.addEventListener('input', save);
+
+// 자정 넘어가면 새 날
+let lastDay = todayKey();
+setInterval(() => {
+  const today = todayKey();
+  if (today !== lastDay) { lastDay = today; editor.value = ''; dateLabel.textContent = formatDate(today); updateCounter(); }
+}, 60000);
+
+updateClock();
+setInterval(updateClock, 1000);
+load();
+editor.focus();
+</script>
+</body>
+</html>
