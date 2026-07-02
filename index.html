@@ -2,8 +2,18 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>원베일리 시설일지</title>
+
+<!-- 홈 화면에 설치했을 때 "앱"처럼 보이게 하는 설정들 -->
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#16324A">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="시설일지">
+<meta name="mobile-web-app-capable" content="yes">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -126,7 +136,27 @@
   .pick{flex:1; padding:9px 4px; text-align:center; border:2px solid var(--line-strong); border-radius:6px; background:#fff; cursor:pointer; font-size:13px;}
   .pick.selected{background:var(--ink); color:#fff; border-color:var(--ink);}
   .export-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
-  @media (max-width:760px){ .export-grid{grid-template-columns:1fr;} .day-layout{flex-direction:column;} .day-side{width:100%;} .main{padding:18px;} .sidebar{width:100%; flex-direction:row; overflow-x:auto; padding:10px;} #app{flex-direction:column;} .brand{display:none;} .sidebar-footer{display:none;} }
+  @media (max-width:760px){
+    .export-grid{grid-template-columns:1fr;}
+    .day-layout{flex-direction:column;}
+    .day-side{width:100%;}
+    .main{padding:16px 14px calc(84px + env(safe-area-inset-bottom));}
+    #app{flex-direction:column;}
+    .sidebar{
+      position:fixed; bottom:0; left:0; right:0; top:auto; width:100%;
+      flex-direction:row; justify-content:space-around; align-items:center;
+      padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+      z-index:40; box-shadow:0 -2px 12px rgba(0,0,0,0.15);
+    }
+    .brand{display:none;}
+    .sidebar-footer{display:none;}
+    .nav-item{flex-direction:column; gap:2px; padding:6px 4px; font-size:10.5px; border-left:none; border-radius:8px; flex:1; text-align:center;}
+    .nav-item.active{border-left:none; background:rgba(255,255,255,0.14);}
+    .nav-icon{width:auto; font-size:17px;}
+    input, select, textarea, .btn{font-size:16px;} /* 16px 미만이면 iOS가 확대해버려서 16px로 고정 */
+    .page-title{font-size:19px;}
+    .modal{max-height:92vh;}
+  }
   .export-card h3{font-size:14.5px; margin:0 0 6px;}
   .export-card p{font-size:12.5px; color:#5B6E66; margin:0 0 12px; line-height:1.5;}
   .folder-status{font-family:'IBM Plex Mono',monospace; font-size:12px; padding:7px 10px; background:var(--paper-2); border-radius:4px; margin-bottom:10px; word-break:break-all;}
@@ -141,6 +171,15 @@
   .file-chip{display:inline-flex; align-items:center; gap:6px; background:var(--paper-2); border:1px solid var(--line); border-radius:14px; padding:4px 6px 4px 10px; font-size:12px;}
   .file-chip .x{cursor:pointer; color:#888; font-size:12px;}
   .file-chip .x:hover{color:var(--warn);}
+  .fab{display:none;}
+  @media (max-width:760px){
+    .fab{
+      display:flex; align-items:center; justify-content:center;
+      position:fixed; right:16px; bottom:calc(68px + env(safe-area-inset-bottom));
+      width:56px; height:56px; border-radius:50%; background:var(--progress); color:#fff;
+      font-size:28px; line-height:1; border:none; box-shadow:0 4px 14px rgba(0,0,0,0.28); z-index:41;
+    }
+  }
 </style>
 </head>
 <body>
@@ -207,6 +246,7 @@ function render(){
       <div class="sidebar-footer">v1.0 · 로컬저장 + 노션연동</div>
     </div>
     <div class="main" id="main"></div>
+    <button class="fab" data-action="open-entry-form" aria-label="항목 추가">+</button>
   `;
   renderMain();
   bindGlobalEvents();
@@ -422,12 +462,13 @@ async function saveEntryFromForm(existingId){
     } else { issueId = document.getElementById('f-issue-select').value; }
   }
 
-  // Save attached files to disk if a folder is chosen
+  // Save attached files: prefer local OneDrive folder; if unavailable (e.g. mobile/iPhone),
+  // upload photos straight to Notion so nothing gets lost.
   let savedFileNames = existingId ? (entryObj.files||[]).slice() : [];
+  const loc = getLoc(locationId);
   if(pendingFiles.length){
     if(dirHandle){
       showToast('첨부 파일 저장 중...');
-      const loc = getLoc(locationId);
       const entryDirName = sanitizeFilename(date + '_' + (loc?(loc.room||loc.floor):'미지정') + '_' + content.slice(0,16));
       try{
         const attachRoot = await getOrCreateDir(dirHandle, '첨부');
@@ -437,9 +478,19 @@ async function saveEntryFromForm(existingId){
           savedFileNames.push(f.name);
         }
       }catch(err){ showToast('첨부 파일 저장 실패: 저장 위치 권한을 설정 탭에서 다시 확인해주세요'); }
+    } else if(SETTINGS.workerUrl && SETTINGS.inboxPageId){
+      showToast('사진을 노션에 업로드 중... (' + pendingFiles.length + '장)');
+      const caption = `[${date}] ${loc?locLabel(loc):''} 첨부 사진 — ${content.slice(0,60)}`;
+      let uploadedCount = 0;
+      for(const f of pendingFiles){
+        const ok = await uploadPhotoToNotion(f, caption);
+        if(ok){ savedFileNames.push(f.name); uploadedCount++; }
+      }
+      if(uploadedCount>0) showToast(`사진 ${uploadedCount}/${pendingFiles.length}장을 노션에 저장했습니다`);
+      if(uploadedCount<pendingFiles.length) showToast('일부 사진은 노션 업로드에 실패했습니다');
     } else {
       savedFileNames = savedFileNames.concat(pendingFiles.map(f=>f.name));
-      showToast('참고: 저장 위치가 지정되지 않아 파일명만 기록되고 실제 파일은 저장되지 않았습니다');
+      showToast('참고: 저장 위치도 노션 연동도 설정되지 않아 파일명만 기록되고 실제 파일은 저장되지 않았습니다');
     }
   }
 
@@ -453,7 +504,6 @@ async function saveEntryFromForm(existingId){
   }
 
   if(wantNotion && SETTINGS.workerUrl){
-    const loc = getLoc(locationId);
     let line = `[${date}] ${locLabel(loc)}`;
     if(category) line += ` · ${category}`;
     if(isIssue) line += ` (${issueStatus})`;
@@ -595,6 +645,7 @@ function renderSettings(){
       <div class="field"><label>받은편지함 페이지 ID</label><input type="text" id="s-inbox-id" placeholder="예: 38a69164a5ee81dd87b8ee0524c60eaf" value="${esc(SETTINGS.inboxPageId)}"></div>
       <button class="btn btn-primary btn-sm" data-action="save-notion-settings">저장</button>
       <button class="btn btn-sm" data-action="test-notion">연결 테스트</button>
+      <div class="note-box">📱 폰(아이폰 포함)에서는 저장 위치(원드라이브) 폴더 선택이 안 되지만, 노션 연동이 설정되어 있으면 사진이 자동으로 노션 받은편지함에 업로드됩니다. 파일당 20MB까지 지원합니다.</div>
     </div>
 
     <div class="card" style="padding:16px;">
@@ -611,6 +662,17 @@ async function sendToNotionInbox(text){
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ pageId: SETTINGS.inboxPageId, text })
     });
+    return res.ok;
+  }catch(e){ return false; }
+}
+async function uploadPhotoToNotion(file, caption){
+  if(!SETTINGS.workerUrl || !SETTINGS.inboxPageId) return false;
+  try{
+    const fd = new FormData();
+    fd.append('pageId', SETTINGS.inboxPageId);
+    fd.append('caption', caption);
+    fd.append('file', file, file.name);
+    const res = await fetch(SETTINGS.workerUrl.replace(/\/$/,'') + '/notion-photo', { method:'POST', body: fd });
     return res.ok;
   }catch(e){ return false; }
 }
@@ -870,6 +932,10 @@ document.addEventListener('change', function(e){
 
 /* ---------------- INIT ---------------- */
 (function init(){ loadData(); render(); })();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('./sw.js').catch(()=>{}); });
+}
 
 })();
 </script>
