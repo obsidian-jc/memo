@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>원베일리 시설일지</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#16324A; --ink-2:#274C6B;
+    --paper:#EEF1EF; --paper-2:#E3E8E4;
+    --surface:#FFFFFF; --line:#D2D9D3; --line-strong:#AAB6AC;
+    --warn:#C84E26; --warn-bg:#FBE9E2;
+    --progress:#B8841A; --progress-bg:#FBF0DA;
+    --ok:#2F6B4F; --ok-bg:#E3EFE8;
+    --notion:#5B4636; --notion-bg:#EFE7DE;
+    --shadow: 0 1px 2px rgba(22,50,74,0.06), 0 2px 8px rgba(22,50,74,0.05);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    font-family:'IBM Plex Sans KR', -apple-system, 'Malgun Gothic', sans-serif;
+    background:var(--paper); color:var(--ink);
+    background-image:linear-gradient(var(--paper-2) 1px, transparent 1px),linear-gradient(90deg, var(--paper-2) 1px, transparent 1px);
+    background-size:28px 28px; min-height:100vh;
+  }
+  .mono{font-family:'IBM Plex Mono','Consolas',monospace;}
+  #app{display:flex; min-height:100vh;}
+  .sidebar{width:220px; flex-shrink:0; background:var(--ink); color:#EAF0EE; display:flex; flex-direction:column; padding:20px 0;}
+  .brand{padding:0 20px 18px 20px; border-bottom:1px solid rgba(255,255,255,0.12); margin-bottom:10px;}
+  .brand .title{font-weight:700; font-size:17px; letter-spacing:0.3px;}
+  .brand .sub{font-family:'IBM Plex Mono',monospace; font-size:11px; opacity:0.6; margin-top:3px;}
+  .nav-item{display:flex; align-items:center; gap:10px; padding:11px 20px; cursor:pointer; font-size:14.5px; color:#CBD8D3; border-left:3px solid transparent; transition:background .15s;}
+  .nav-item:hover{background:rgba(255,255,255,0.06);}
+  .nav-item.active{background:rgba(255,255,255,0.1); color:#fff; border-left-color:var(--progress);}
+  .nav-icon{font-family:'IBM Plex Mono',monospace; font-size:12px; width:18px; text-align:center; opacity:0.85;}
+  .sidebar-footer{margin-top:auto; padding:14px 20px 0; font-size:11px; color:rgba(255,255,255,0.4); font-family:'IBM Plex Mono',monospace;}
+  .main{flex:1; padding:28px 36px; max-width:1100px;}
+  .page-header{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:18px; flex-wrap:wrap; gap:10px;}
+  .page-title{font-size:21px; font-weight:700;}
+  .page-desc{font-size:13px; color:#5B6E66; margin-top:2px;}
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:6px; box-shadow:var(--shadow);}
+  .stat-row{display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap;}
+  .stat-chip{background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:10px 16px; min-width:120px;}
+  .stat-chip .num{font-family:'IBM Plex Mono',monospace; font-size:22px; font-weight:600;}
+  .stat-chip .label{font-size:12px; color:#5B6E66; margin-top:2px;}
+  .stat-chip.warn .num{color:var(--warn);}
+  .stat-chip.progress .num{color:var(--progress);}
+  button{font-family:inherit; cursor:pointer;}
+  .btn{border:1px solid var(--line-strong); background:var(--surface); color:var(--ink); padding:8px 14px; border-radius:5px; font-size:13.5px; font-weight:500;}
+  .btn:hover{background:#F5F7F5;}
+  .btn-primary{background:var(--ink); color:#fff; border-color:var(--ink);}
+  .btn-primary:hover{background:var(--ink-2);}
+  .btn-notion{background:var(--notion); color:#fff; border-color:var(--notion);}
+  .btn-notion:hover{opacity:0.9;}
+  .btn-danger{color:var(--warn); border-color:var(--warn);}
+  .btn-danger:hover{background:var(--warn-bg);}
+  .btn-sm{padding:5px 10px; font-size:12.5px;}
+  .btn-ghost{border:none; background:none; color:#5B6E66;}
+  .btn-ghost:hover{color:var(--ink); text-decoration:underline;}
+  input, select, textarea{font-family:inherit; font-size:13.5px; padding:8px 10px; border:1px solid var(--line-strong); border-radius:5px; background:#fff; color:var(--ink); width:100%;}
+  input:focus, select:focus, textarea:focus{outline:2px solid var(--ink-2); outline-offset:1px;}
+  label{font-size:12.5px; color:#5B6E66; font-weight:500; display:block; margin-bottom:4px;}
+  .field{margin-bottom:12px;}
+  .field-row{display:flex; gap:10px;}
+  .field-row > .field{flex:1;}
+  .stamp{display:inline-flex; align-items:center; gap:4px; font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; letter-spacing:0.06em; padding:3px 9px; border-radius:3px; border:1.5px dashed currentColor; transform:rotate(-1.5deg); text-transform:uppercase;}
+  .stamp.s-고장{color:var(--warn); background:var(--warn-bg);}
+  .stamp.s-수리중{color:var(--progress); background:var(--progress-bg);}
+  .stamp.s-완료{color:var(--ok); background:var(--ok-bg);}
+  .stamp.s-notion{color:var(--notion); background:var(--notion-bg); border-style:solid;}
+  .day-layout{display:flex; gap:20px;}
+  .day-side{width:200px; flex-shrink:0;}
+  .day-list{max-height:560px; overflow-y:auto; border:1px solid var(--line); border-radius:6px; background:var(--surface);}
+  .day-list-item{padding:9px 12px; font-size:13px; cursor:pointer; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;}
+  .day-list-item:hover{background:#F5F7F5;}
+  .day-list-item.active{background:var(--paper-2); font-weight:600;}
+  .day-list-item .cnt{font-family:'IBM Plex Mono',monospace; font-size:11px; color:#888;}
+  .day-main{flex:1;}
+  .entry-card{background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:12px 14px; margin-bottom:9px; cursor:pointer;}
+  .entry-card:hover{border-color:var(--line-strong);}
+  .entry-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
+  .entry-loc{font-size:12px; color:var(--ink-2); font-weight:600;}
+  .entry-cat{display:inline-block; font-size:11px; color:#5B6E66; background:var(--paper-2); padding:1px 7px; border-radius:3px; margin-left:6px;}
+  .entry-content{font-size:13.5px; margin-top:5px; color:#2A3B33; white-space:pre-wrap;}
+  .entry-files{margin-top:6px; display:flex; flex-wrap:wrap; gap:5px;}
+  .entry-file-chip{font-size:11px; background:var(--paper-2); border-radius:3px; padding:2px 7px; color:#5B6E66;}
+  .badges{display:flex; gap:5px; align-items:center;}
+  .empty-state{text-align:center; padding:50px 20px; color:#8a958e; font-size:13.5px; border:1px dashed var(--line-strong); border-radius:6px; background:#fafbfa;}
+  .modal-overlay{position:fixed; inset:0; background:rgba(22,50,74,0.35); display:flex; align-items:center; justify-content:center; z-index:50; padding:20px;}
+  .modal{background:var(--surface); border-radius:8px; width:100%; max-width:520px; max-height:90vh; overflow-y:auto; box-shadow:0 10px 40px rgba(0,0,0,0.2);}
+  .modal-head{padding:16px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;}
+  .modal-head .t{font-weight:700; font-size:15.5px;}
+  .modal-body{padding:18px 20px;}
+  .modal-foot{padding:14px 20px; border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:8px; flex-wrap:wrap;}
+  .close-x{background:none; border:none; font-size:18px; color:#888; cursor:pointer; line-height:1;}
+  .checkbox-row{display:flex; align-items:center; gap:8px; margin-bottom:12px;}
+  .checkbox-row input{width:auto;}
+  .checkbox-row label{margin:0; font-size:13.5px; color:var(--ink); font-weight:500;}
+  .issue-box{background:var(--paper-2); border:1px solid var(--line); border-radius:6px; padding:12px; margin-top:8px;}
+  .issue-row{background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:12px 14px; margin-bottom:8px; cursor:pointer; display:flex; justify-content:space-between; align-items:center;}
+  .issue-row:hover{border-color:var(--line-strong);}
+  .issue-row .left{display:flex; flex-direction:column; gap:3px;}
+  .issue-title{font-weight:600; font-size:14px;}
+  .issue-loc{font-size:12px; color:#5B6E66;}
+  .section-label{font-size:12px; font-weight:700; color:#5B6E66; text-transform:uppercase; letter-spacing:0.05em; margin:18px 0 8px;}
+  details.completed-group summary{cursor:pointer; font-size:13px; color:#5B6E66; padding:6px 0; font-weight:600;}
+  .timeline{margin-top:10px; border-left:2px solid var(--line-strong); padding-left:14px;}
+  .timeline-item{margin-bottom:14px; position:relative;}
+  .timeline-item:before{content:''; position:absolute; left:-19px; top:4px; width:8px; height:8px; border-radius:50%; background:var(--ink-2);}
+  .timeline-date{font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:#5B6E66;}
+  .timeline-note{font-size:13.5px; margin-top:3px; white-space:pre-wrap;}
+  .floor-card{margin-bottom:10px; background:var(--surface); border:1px solid var(--line); border-radius:6px; overflow:hidden;}
+  .floor-head{padding:11px 14px; display:flex; justify-content:space-between; align-items:center; background:#F6F7F6; cursor:pointer;}
+  .floor-head .name{font-weight:700; font-size:14px;}
+  .room-list{padding:4px 14px 10px;}
+  .room-item{padding:7px 10px; font-size:13px; border-radius:4px; cursor:pointer; display:flex; justify-content:space-between; align-items:center;}
+  .room-item:hover{background:var(--paper-2);}
+  .add-inline{display:flex; gap:6px; padding:8px 14px;}
+  .add-inline input{flex:1;}
+  .breadcrumb{font-size:12px; color:#5B6E66; margin-bottom:6px;}
+  .breadcrumb a{color:var(--ink-2); cursor:pointer; text-decoration:none;}
+  .breadcrumb a:hover{text-decoration:underline;}
+  .pickrow{display:flex; gap:8px;}
+  .pick{flex:1; padding:9px 4px; text-align:center; border:2px solid var(--line-strong); border-radius:6px; background:#fff; cursor:pointer; font-size:13px;}
+  .pick.selected{background:var(--ink); color:#fff; border-color:var(--ink);}
+  .export-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:760px){ .export-grid{grid-template-columns:1fr;} .day-layout{flex-direction:column;} .day-side{width:100%;} .main{padding:18px;} .sidebar{width:100%; flex-direction:row; overflow-x:auto; padding:10px;} #app{flex-direction:column;} .brand{display:none;} .sidebar-footer{display:none;} }
+  .export-card h3{font-size:14.5px; margin:0 0 6px;}
+  .export-card p{font-size:12.5px; color:#5B6E66; margin:0 0 12px; line-height:1.5;}
+  .folder-status{font-family:'IBM Plex Mono',monospace; font-size:12px; padding:7px 10px; background:var(--paper-2); border-radius:4px; margin-bottom:10px; word-break:break-all;}
+  .radio-row{display:flex; gap:14px; margin-bottom:10px;}
+  .radio-row label{display:flex; align-items:center; gap:5px; font-size:13px; color:var(--ink); font-weight:400;}
+  .radio-row input{width:auto;}
+  .note-box{font-size:12px; color:#8a958e; background:#fafbfa; border:1px dashed var(--line-strong); border-radius:5px; padding:8px 10px; margin-top:10px; line-height:1.5;}
+  .toast{position:fixed; bottom:24px; right:24px; background:var(--ink); color:#fff; padding:11px 18px; border-radius:6px; font-size:13.5px; box-shadow:var(--shadow); z-index:100; opacity:0; transform:translateY(8px); transition:all .25s; max-width:360px; white-space:pre-line;}
+  .toast.show{opacity:1; transform:translateY(0);}
+  .file-import-input{display:none;}
+  .file-list-preview{margin-top:8px; display:flex; flex-wrap:wrap; gap:6px;}
+  .file-chip{display:inline-flex; align-items:center; gap:6px; background:var(--paper-2); border:1px solid var(--line); border-radius:14px; padding:4px 6px 4px 10px; font-size:12px;}
+  .file-chip .x{cursor:pointer; color:#888; font-size:12px;}
+  .file-chip .x:hover{color:var(--warn);}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" class="toast"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+(function(){
+"use strict";
+
+/* ---------------- STATE ---------------- */
+let DATA = { entries: [], issues: [], categories: ['점검','수리','메모'], locations: [] };
+let SETTINGS = { workerUrl:'', inboxPageId:'', autoOpenDir:false };
+let UI = { tab:'daily', selectedDate: todayStr(), selectedIssueId:null, selectedLocId:null, openFloors:{} };
+let dirHandle = null;
+let pendingFiles = []; // File objects staged for the entry currently being edited
+
+function todayStr(){ const d = new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function pad(n){ return n<10 ? '0'+n : ''+n; }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+
+/* ---------------- STORAGE ---------------- */
+function loadData(){
+  try{
+    const raw = localStorage.getItem('facility-data');
+    if(raw){ DATA = Object.assign({entries:[],issues:[],categories:['점검','수리','메모'],locations:[]}, JSON.parse(raw)); }
+    const rawS = localStorage.getItem('facility-settings');
+    if(rawS){ SETTINGS = Object.assign(SETTINGS, JSON.parse(rawS)); }
+  }catch(e){}
+}
+let saveTimer=null;
+function saveData(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{
+    try{ localStorage.setItem('facility-data', JSON.stringify(DATA)); }
+    catch(e){ showToast('저장 중 오류가 발생했습니다'); }
+  }, 150);
+}
+function saveSettings(){
+  try{ localStorage.setItem('facility-settings', JSON.stringify(SETTINGS)); }catch(e){}
+}
+
+/* ---------------- HELPERS ---------------- */
+function locLabel(loc){ if(!loc) return '(알수없음)'; return loc.room ? (loc.floor+' / '+loc.room) : (loc.floor+' (전체)'); }
+function getLoc(id){ return DATA.locations.find(l=>l.id===id); }
+function getIssue(id){ return DATA.issues.find(i=>i.id===id); }
+function entriesForIssue(issueId){ return DATA.entries.filter(e=>e.issueId===issueId).sort((a,b)=> (a.date+a._t).localeCompare(b.date+b._t)); }
+function issueCurrentStatus(issueId){ const es=entriesForIssue(issueId); if(es.length===0) return '고장'; return es[es.length-1].issueStatus||'고장'; }
+function entriesForLocation(locId){ return DATA.entries.filter(e=>e.locationId===locId).sort((a,b)=> (b.date+b._t).localeCompare(a.date+a._t)); }
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'), 3200); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------------- RENDER ROOT ---------------- */
+function render(){
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="sidebar">
+      <div class="brand"><div class="title">원베일리 시설일지</div><div class="sub">FACILITY LOG SYSTEM</div></div>
+      ${navItem('daily','◧','일일일지')}
+      ${navItem('issues','▲','이슈관리')}
+      ${navItem('locations','▣','위치')}
+      ${navItem('export','⇄','내보내기')}
+      ${navItem('settings','✦','설정')}
+      <div class="sidebar-footer">v1.0 · 로컬저장 + 노션연동</div>
+    </div>
+    <div class="main" id="main"></div>
+  `;
+  renderMain();
+  bindGlobalEvents();
+}
+function navItem(key, icon, label){
+  return `<div class="nav-item ${UI.tab===key?'active':''}" data-nav="${key}"><span class="nav-icon">${icon}</span><span>${label}</span></div>`;
+}
+function renderMain(){
+  const main = document.getElementById('main');
+  if(UI.tab==='daily') main.innerHTML = renderDaily();
+  else if(UI.tab==='issues') main.innerHTML = renderIssues();
+  else if(UI.tab==='locations') main.innerHTML = renderLocations();
+  else if(UI.tab==='export') main.innerHTML = renderExport();
+  else if(UI.tab==='settings') main.innerHTML = renderSettings();
+}
+
+/* ---------------- DAILY LOG TAB ---------------- */
+function renderDaily(){
+  const dates = [...new Set(DATA.entries.map(e=>e.date))].sort().reverse();
+  if(!dates.includes(UI.selectedDate)) dates.unshift(UI.selectedDate);
+  const dayEntries = DATA.entries.filter(e=>e.date===UI.selectedDate).sort((a,b)=>a._t.localeCompare(b._t));
+  const thisMonth = UI.selectedDate.slice(0,7);
+  const monthCount = DATA.entries.filter(e=>e.date.slice(0,7)===thisMonth).length;
+  const activeIssues = DATA.issues.filter(i=>issueCurrentStatus(i.id)!=='완료').length;
+
+  return `
+    <div class="page-header">
+      <div><div class="page-title">일일일지</div><div class="page-desc">날짜를 선택하고 업무 항목을 기록하세요. 사진 첨부, 노션 전송이 한 번에 됩니다.</div></div>
+      <button class="btn btn-primary" data-action="open-entry-form">+ 항목 추가</button>
+    </div>
+    <div class="stat-row">
+      <div class="stat-chip"><div class="num mono">${monthCount}</div><div class="label">이번달(${thisMonth}) 기록</div></div>
+      <div class="stat-chip warn"><div class="num mono">${activeIssues}</div><div class="label">진행중 이슈</div></div>
+      <div class="stat-chip"><div class="num mono">${DATA.locations.length}</div><div class="label">등록 위치</div></div>
+    </div>
+    <div class="day-layout">
+      <div class="day-side">
+        <div class="field"><input type="date" id="date-picker" value="${UI.selectedDate}"></div>
+        <div class="day-list">
+          ${dates.length===0 ? '<div style="padding:14px;font-size:12.5px;color:#888;">기록 없음</div>' :
+            dates.map(d=>{
+              const cnt = DATA.entries.filter(e=>e.date===d).length;
+              return `<div class="day-list-item ${d===UI.selectedDate?'active':''}" data-pick-date="${d}"><span>${d}</span><span class="cnt mono">${cnt}</span></div>`;
+            }).join('')}
+        </div>
+      </div>
+      <div class="day-main">
+        ${dayEntries.length===0 ? `<div class="empty-state">이 날짜에 기록된 항목이 없습니다.</div>` : dayEntries.map(e=>renderEntryCard(e)).join('')}
+      </div>
+    </div>
+  `;
+}
+function renderEntryCard(e){
+  const loc = getLoc(e.locationId);
+  let badge = '';
+  if(e.isIssue) badge += `<span class="stamp s-${e.issueStatus}">${e.issueStatus}</span>`;
+  if(e.sentToNotion) badge += `<span class="stamp s-notion">노션</span>`;
+  const files = (e.files||[]).map(f=>`<span class="entry-file-chip">📎 ${esc(f)}</span>`).join('');
+  return `
+    <div class="entry-card" data-edit-entry="${e.id}">
+      <div class="entry-top">
+        <div><span class="entry-loc">${esc(locLabel(loc))}</span>${e.category?`<span class="entry-cat">${esc(e.category)}</span>`:''}</div>
+        <div class="badges">${badge}</div>
+      </div>
+      <div class="entry-content">${esc(e.content)}</div>
+      ${files?`<div class="entry-files">${files}</div>`:''}
+    </div>
+  `;
+}
+
+/* Entry form modal */
+let formEntryContext = null;
+function openEntryForm(existingId){
+  const existing = existingId ? DATA.entries.find(e=>e.id===existingId) : null;
+  formEntryContext = existing;
+  pendingFiles = [];
+  const date = existing ? existing.date : UI.selectedDate;
+  const floors = [...new Set(DATA.locations.map(l=>l.floor))];
+  const locOptions = floors.map(f=>{
+    const floorLoc = DATA.locations.find(l=>l.floor===f && !l.room);
+    const rooms = DATA.locations.filter(l=>l.floor===f && l.room);
+    let opts = '';
+    if(floorLoc) opts += `<option value="${floorLoc.id}" ${existing&&existing.locationId===floorLoc.id?'selected':''}>${esc(f)} (층 전체)</option>`;
+    rooms.forEach(r=>{ opts += `<option value="${r.id}" ${existing&&existing.locationId===r.id?'selected':''}>　└ ${esc(r.room)}</option>`; });
+    return `<optgroup label="${esc(f)}">${opts}</optgroup>`;
+  }).join('');
+  const catOptions = DATA.categories.map(c=>`<option value="${esc(c)}" ${existing&&existing.category===c?'selected':''}>${esc(c)}</option>`).join('');
+  const isIssue = existing ? existing.isIssue : false;
+  const sendNotion = existing ? !!existing.sentToNotion : !!SETTINGS.workerUrl;
+
+  const html = `
+    <div class="modal-overlay" id="entry-modal-overlay">
+      <div class="modal">
+        <div class="modal-head"><div class="t">${existing?'항목 수정':'항목 추가'}</div><button class="close-x" data-action="close-modal">✕</button></div>
+        <div class="modal-body">
+          <div class="field-row">
+            <div class="field"><label>날짜</label><input type="date" id="f-date" value="${date}"></div>
+            <div class="field"><label>카테고리</label><select id="f-category"><option value="">선택안함</option>${catOptions}</select></div>
+          </div>
+          ${DATA.locations.length===0 ? `<div class="note-box">등록된 위치가 없습니다. <a style="color:var(--ink-2);cursor:pointer;" data-nav="locations">위치 탭</a>에서 먼저 추가해주세요.</div>` : `
+          <div class="field"><label>위치</label><select id="f-location"><option value="">선택</option>${locOptions}</select></div>`}
+          <div class="field"><label>내용</label><textarea id="f-content" rows="3" placeholder="수행한 업무, 발견된 사항 등을 적어주세요">${existing?esc(existing.content):''}</textarea></div>
+          <div class="field">
+            <label>사진 / 동영상 첨부</label>
+            <input type="file" id="f-files" multiple accept="image/*,video/*">
+            <div class="file-list-preview" id="f-files-preview"></div>
+            ${existing && existing.files && existing.files.length ? `<div class="note-box">기존 첨부: ${existing.files.map(esc).join(', ')} (새로 추가한 파일만 저장 폴더에 복사됩니다)</div>`:''}
+          </div>
+          <div class="checkbox-row"><input type="checkbox" id="f-isissue" ${isIssue?'checked':''}><label for="f-isissue">고장/수리 이슈로 기록</label></div>
+          <div id="issue-fields" style="display:${isIssue?'block':'none'};"></div>
+          <div class="checkbox-row"><input type="checkbox" id="f-sendnotion" ${sendNotion?'checked':''} ${SETTINGS.workerUrl?'':'disabled'}><label for="f-sendnotion">노션 📥받은편지함으로도 전송${SETTINGS.workerUrl?'':' (설정 탭에서 노션 연동을 먼저 구성하세요)'}</label></div>
+        </div>
+        <div class="modal-foot">
+          ${existing?`<button class="btn btn-danger" data-action="delete-entry" data-id="${existing.id}">삭제</button>`:''}
+          <button class="btn" data-action="close-modal">취소</button>
+          <button class="btn btn-primary" data-action="save-entry" data-id="${existing?existing.id:''}">저장</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', html);
+  document.getElementById('f-isissue').addEventListener('change', refreshIssueFields);
+  document.getElementById('f-location') && document.getElementById('f-location').addEventListener('change', refreshIssueFields);
+  document.getElementById('f-files').addEventListener('change', onFilesPicked);
+  if(isIssue) refreshIssueFields();
+  renderFilesPreview();
+}
+function onFilesPicked(e){
+  Array.from(e.target.files).forEach(f=>pendingFiles.push(f));
+  e.target.value='';
+  renderFilesPreview();
+}
+function renderFilesPreview(){
+  const box = document.getElementById('f-files-preview');
+  if(!box) return;
+  box.innerHTML = pendingFiles.map((f,i)=>`<span class="file-chip">📎 ${esc(f.name)}<span class="x" data-remove-file="${i}">✕</span></span>`).join('');
+}
+function refreshIssueFields(){
+  const existing = formEntryContext;
+  const checked = document.getElementById('f-isissue').checked;
+  const box = document.getElementById('issue-fields');
+  box.style.display = checked ? 'block' : 'none';
+  if(!checked){ box.innerHTML=''; return; }
+  const locSel = document.getElementById('f-location');
+  const locId = locSel ? locSel.value : '';
+  const candidateIssues = DATA.issues.filter(i=> i.locationId===locId && issueCurrentStatus(i.id)!=='완료');
+  const isExistingLinked = existing && existing.issueId;
+  box.innerHTML = `
+    <div class="issue-box">
+      <div class="field"><label>이슈 연결</label>
+        <select id="f-issue-mode">
+          <option value="new" ${!isExistingLinked?'selected':''}>새 이슈로 등록</option>
+          ${candidateIssues.length>0?`<option value="existing" ${isExistingLinked?'selected':''}>기존 이슈에 연결</option>`:''}
+        </select>
+      </div>
+      <div id="issue-mode-fields"></div>
+    </div>`;
+  document.getElementById('f-issue-mode').addEventListener('change', ()=>renderIssueModeFields(candidateIssues));
+  renderIssueModeFields(candidateIssues);
+}
+function renderIssueModeFields(candidateIssues){
+  const existing = formEntryContext;
+  const mode = document.getElementById('f-issue-mode').value;
+  const target = document.getElementById('issue-mode-fields');
+  if(mode==='new'){
+    const linkedIssue = existing && existing.issueId ? getIssue(existing.issueId) : null;
+    target.innerHTML = `
+      <div class="field"><label>이슈 제목 (증상)</label><input type="text" id="f-issue-title" placeholder="예: 펌프 소음 발생" value="${linkedIssue?esc(linkedIssue.title):''}"></div>
+      <div class="field"><label>상태</label>
+        <select id="f-issue-status">
+          <option value="고장" ${existing&&existing.issueStatus==='고장'?'selected':''}>고장</option>
+          <option value="수리중" ${existing&&existing.issueStatus==='수리중'?'selected':''}>수리중</option>
+          <option value="완료" ${existing&&existing.issueStatus==='완료'?'selected':''}>완료</option>
+        </select>
+      </div>`;
+  } else {
+    const opts = candidateIssues.map(i=>`<option value="${i.id}" ${existing&&existing.issueId===i.id?'selected':''}>${esc(i.title)}</option>`).join('');
+    target.innerHTML = `
+      <div class="field"><label>연결할 이슈</label><select id="f-issue-select">${opts}</select></div>
+      <div class="field"><label>이 시점 상태</label>
+        <select id="f-issue-status">
+          <option value="고장" ${existing&&existing.issueStatus==='고장'?'selected':''}>고장</option>
+          <option value="수리중" ${existing&&existing.issueStatus==='수리중'?'selected':''}>수리중</option>
+          <option value="완료" ${existing&&existing.issueStatus==='완료'?'selected':''}>완료</option>
+        </select>
+      </div>`;
+  }
+}
+async function saveEntryFromForm(existingId){
+  const date = document.getElementById('f-date').value;
+  const category = document.getElementById('f-category').value;
+  const locSel = document.getElementById('f-location');
+  const locationId = locSel ? locSel.value : '';
+  const content = document.getElementById('f-content').value.trim();
+  const isIssue = document.getElementById('f-isissue').checked;
+  const wantNotion = document.getElementById('f-sendnotion').checked;
+
+  if(!locationId){ showToast('위치를 선택해주세요'); return; }
+  if(!content){ showToast('내용을 입력해주세요'); return; }
+
+  let issueId=null, issueStatus=null;
+  const entryObj = existingId ? DATA.entries.find(x=>x.id===existingId) : null;
+  if(isIssue){
+    const mode = document.getElementById('f-issue-mode').value;
+    issueStatus = document.getElementById('f-issue-status').value;
+    if(mode==='new'){
+      const title = document.getElementById('f-issue-title').value.trim() || content.slice(0,30);
+      if(entryObj && entryObj.issueId){
+        const existingIssue = getIssue(entryObj.issueId);
+        if(existingIssue){ existingIssue.title=title; issueId=existingIssue.id; }
+        else { const ni={id:uid(),title,locationId,createdDate:date}; DATA.issues.push(ni); issueId=ni.id; }
+      } else { const ni={id:uid(),title,locationId,createdDate:date}; DATA.issues.push(ni); issueId=ni.id; }
+    } else { issueId = document.getElementById('f-issue-select').value; }
+  }
+
+  // Save attached files to disk if a folder is chosen
+  let savedFileNames = existingId ? (entryObj.files||[]).slice() : [];
+  if(pendingFiles.length){
+    if(dirHandle){
+      showToast('첨부 파일 저장 중...');
+      const loc = getLoc(locationId);
+      const entryDirName = sanitizeFilename(date + '_' + (loc?(loc.room||loc.floor):'미지정') + '_' + content.slice(0,16));
+      try{
+        const attachRoot = await getOrCreateDir(dirHandle, '첨부');
+        const entryDir = await getOrCreateDir(attachRoot, entryDirName);
+        for(const f of pendingFiles){
+          await writeFileBinary(entryDir, f.name, f);
+          savedFileNames.push(f.name);
+        }
+      }catch(err){ showToast('첨부 파일 저장 실패: 저장 위치 권한을 설정 탭에서 다시 확인해주세요'); }
+    } else {
+      savedFileNames = savedFileNames.concat(pendingFiles.map(f=>f.name));
+      showToast('참고: 저장 위치가 지정되지 않아 파일명만 기록되고 실제 파일은 저장되지 않았습니다');
+    }
+  }
+
+  let newEntry;
+  if(existingId){
+    Object.assign(entryObj, {date, category, locationId, content, isIssue, issueId, issueStatus, files:savedFileNames});
+    newEntry = entryObj;
+  } else {
+    newEntry = {id:uid(), date, category, locationId, content, isIssue, issueId, issueStatus, files:savedFileNames, sentToNotion:false, _t:new Date().toISOString()};
+    DATA.entries.push(newEntry);
+  }
+
+  if(wantNotion && SETTINGS.workerUrl){
+    const loc = getLoc(locationId);
+    let line = `[${date}] ${locLabel(loc)}`;
+    if(category) line += ` · ${category}`;
+    if(isIssue) line += ` (${issueStatus})`;
+    line += ` — ${content}`;
+    if(savedFileNames.length) line += ` [첨부 ${savedFileNames.length}건]`;
+    const ok = await sendToNotionInbox(line);
+    newEntry.sentToNotion = ok;
+    if(!ok) showToast('저장은 완료됐지만 노션 전송에 실패했습니다. 설정을 확인해주세요.');
+  }
+
+  saveData(); closeModal(); UI.selectedDate=date; render();
+  showToast('저장되었습니다' + (newEntry.sentToNotion?' (노션 전송 완료)':''));
+}
+function deleteEntry(id){
+  DATA.entries = DATA.entries.filter(e=>e.id!==id);
+  saveData(); closeModal(); render(); showToast('삭제되었습니다');
+}
+function closeModal(){ const el=document.getElementById('entry-modal-overlay'); if(el) el.remove(); }
+
+/* ---------------- ISSUES TAB ---------------- */
+function renderIssues(){
+  if(UI.selectedIssueId) return renderIssueDetail(UI.selectedIssueId);
+  const active = DATA.issues.filter(i=>issueCurrentStatus(i.id)!=='완료').sort((a,b)=>{
+    const ea=entriesForIssue(a.id), eb=entriesForIssue(b.id);
+    const da = ea.length?ea[ea.length-1].date:a.createdDate;
+    const db = eb.length?eb[eb.length-1].date:b.createdDate;
+    return db.localeCompare(da);
+  });
+  const completed = DATA.issues.filter(i=>issueCurrentStatus(i.id)==='완료');
+  return `
+    <div class="page-header"><div><div class="page-title">이슈관리</div><div class="page-desc">고장/수리 이슈를 상태별로 추적합니다. 입력은 일일일지에서, 여기서는 모아 봅니다.</div></div></div>
+    <div class="section-label">진행중 (${active.length})</div>
+    ${active.length===0?`<div class="empty-state">진행중인 이슈가 없습니다.</div>`:active.map(i=>renderIssueRow(i)).join('')}
+    ${completed.length>0?`<details class="completed-group" style="margin-top:18px;"><summary>완료된 이슈 (${completed.length}) — 펼쳐서 보기</summary>
+      <div style="margin-top:8px;">${completed.sort((a,b)=>b.createdDate.localeCompare(a.createdDate)).map(i=>renderIssueRow(i)).join('')}</div></details>`:''}
+  `;
+}
+function renderIssueRow(issue){
+  const loc=getLoc(issue.locationId), status=issueCurrentStatus(issue.id), es=entriesForIssue(issue.id);
+  const lastDate = es.length?es[es.length-1].date:issue.createdDate;
+  return `<div class="issue-row" data-open-issue="${issue.id}"><div class="left"><div class="issue-title">${esc(issue.title)}</div>
+    <div class="issue-loc">${esc(locLabel(loc))} · 발생 ${issue.createdDate} · 최근 ${lastDate}</div></div><span class="stamp s-${status}">${status}</span></div>`;
+}
+function renderIssueDetail(issueId){
+  const issue=getIssue(issueId);
+  if(!issue){ UI.selectedIssueId=null; return renderIssues(); }
+  const loc=getLoc(issue.locationId), es=entriesForIssue(issueId), status=issueCurrentStatus(issueId);
+  return `
+    <div class="breadcrumb"><a data-action="back-to-issues">← 이슈관리</a></div>
+    <div class="page-header"><div><div class="page-title">${esc(issue.title)} <span class="stamp s-${status}" style="margin-left:8px;">${status}</span></div>
+      <div class="page-desc">${esc(locLabel(loc))} · 발생일 ${issue.createdDate}</div></div></div>
+    <div class="card" style="padding:16px;"><div class="section-label" style="margin-top:0;">진행 타임라인</div>
+      <div class="timeline">${es.map(e=>`<div class="timeline-item"><div class="timeline-date">${e.date} <span class="stamp s-${e.issueStatus}" style="margin-left:4px;">${e.issueStatus}</span></div>
+        <div class="timeline-note">${esc(e.content)}</div>${(e.files&&e.files.length)?`<div class="entry-files">${e.files.map(f=>`<span class="entry-file-chip">📎 ${esc(f)}</span>`).join('')}</div>`:''}</div>`).join('')}</div></div>
+  `;
+}
+
+/* ---------------- LOCATIONS TAB ---------------- */
+function renderLocations(){
+  if(UI.selectedLocId) return renderLocationDetail(UI.selectedLocId);
+  const floors = [...new Set(DATA.locations.map(l=>l.floor))];
+  return `
+    <div class="page-header"><div><div class="page-title">위치</div><div class="page-desc">층과 설비를 등록하고, 위치를 클릭하면 그동안의 기록을 모아볼 수 있습니다.</div></div></div>
+    <div class="card" style="padding:12px 14px; margin-bottom:16px;"><div class="add-inline" style="padding:0;">
+      <input type="text" id="new-floor-input" placeholder="새 층 이름 (예: 지하4층)"><button class="btn btn-primary btn-sm" data-action="add-floor">+ 층 추가</button></div></div>
+    ${floors.length===0?`<div class="empty-state">등록된 층이 없습니다. 위에서 층을 먼저 추가하세요.</div>`:floors.map(f=>renderFloorCard(f)).join('')}
+  `;
+}
+function renderFloorCard(floor){
+  const floorLoc = DATA.locations.find(l=>l.floor===floor && !l.room);
+  const rooms = DATA.locations.filter(l=>l.floor===floor && l.room);
+  const open = !!UI.openFloors[floor];
+  return `
+    <div class="floor-card">
+      <div class="floor-head" data-toggle-floor="${esc(floor)}"><span class="name">${esc(floor)}</span>
+        <span style="display:flex; gap:8px; align-items:center;">
+          ${floorLoc?`<button class="btn-ghost" data-action="open-loc" data-id="${floorLoc.id}" style="font-size:12px;">층 전체 기록보기</button>`:''}
+          <span class="mono" style="font-size:12px; color:#888;">${rooms.length}개 설비 ${open?'▾':'▸'}</span></span></div>
+      ${open?`<div class="room-list">${rooms.map(r=>`<div class="room-item" data-open-loc="${r.id}"><span>${esc(r.room)}</span>
+          <span class="btn-ghost" data-action="delete-loc" data-id="${r.id}" style="font-size:12px;">삭제</span></div>`).join('')}</div>
+        <div class="add-inline"><input type="text" id="new-room-${esc(floor)}" placeholder="새 설비명 (예: 열교환실#1)">
+          <button class="btn btn-sm" data-action="add-room" data-floor="${esc(floor)}">+ 설비 추가</button></div>`:''}
+    </div>`;
+}
+function renderLocationDetail(locId){
+  const loc = getLoc(locId);
+  if(!loc){ UI.selectedLocId=null; return renderLocations(); }
+  if(loc.room){
+    const es = entriesForLocation(locId);
+    return `
+      <div class="breadcrumb"><a data-action="back-to-locations">← 위치</a> &nbsp;/&nbsp; ${esc(loc.floor)}</div>
+      <div class="page-header"><div class="page-title">${esc(loc.room)}</div></div>
+      <div class="card" style="padding:14px 16px;">
+        <label>설비 정보 (모델명, 스펙 등 자유 기록)</label>
+        <textarea id="loc-info" rows="3" placeholder="예: 설치일 2020-03, 모델 XYZ-200">${esc(loc.info||'')}</textarea>
+        <div style="margin-top:8px;"><button class="btn btn-sm" data-action="save-loc-info" data-id="${loc.id}">정보 저장</button></div>
+      </div>
+      <div class="section-label">전체 기록 타임라인 (${es.length})</div>
+      ${es.length===0?`<div class="empty-state">이 위치에 기록된 항목이 없습니다.</div>`:
+        `<div class="timeline">${es.map(e=>`<div class="timeline-item"><div class="timeline-date">${e.date} ${e.category?`· ${esc(e.category)}`:''} ${e.isIssue?`<span class="stamp s-${e.issueStatus}" style="margin-left:4px;">${e.issueStatus}</span>`:''}</div>
+          <div class="timeline-note">${esc(e.content)}</div>${(e.files&&e.files.length)?`<div class="entry-files">${e.files.map(f=>`<span class="entry-file-chip">📎 ${esc(f)}</span>`).join('')}</div>`:''}</div>`).join('')}</div>`}
+    `;
+  } else {
+    const children = DATA.locations.filter(l=>l.floor===loc.floor && l.room);
+    const es = entriesForLocation(locId);
+    return `
+      <div class="breadcrumb"><a data-action="back-to-locations">← 위치</a></div>
+      <div class="page-header"><div class="page-title">${esc(loc.floor)}</div></div>
+      <div class="section-label">하위 설비 (${children.length})</div>
+      <div style="margin-bottom:14px;">${children.length===0?`<div style="font-size:13px;color:#888;">등록된 설비 없음</div>`:
+        children.map(c=>`<div class="issue-row" data-open-loc="${c.id}" style="cursor:pointer;"><div class="left"><div class="issue-title">${esc(c.room)}</div></div></div>`).join('')}</div>
+      <div class="section-label">층 전체에 직접 기록된 항목 (${es.length})</div>
+      ${es.length===0?`<div class="empty-state">없음</div>`:
+        `<div class="timeline">${es.map(e=>`<div class="timeline-item"><div class="timeline-date">${e.date}</div><div class="timeline-note">${esc(e.content)}</div></div>`).join('')}</div>`}
+    `;
+  }
+}
+
+/* ---------------- SETTINGS TAB ---------------- */
+function renderSettings(){
+  const catChips = DATA.categories.map(c=>`<span class="file-chip">${esc(c)}<span class="x" data-action="delete-category" data-name="${esc(c)}">✕</span></span>`).join('');
+  return `
+    <div class="page-header"><div><div class="page-title">설정</div><div class="page-desc">저장 위치, 카테고리, 노션 연동을 관리합니다.</div></div></div>
+
+    <div class="card" style="padding:16px; margin-bottom:16px;">
+      <h3 style="margin:0 0 6px; font-size:14.5px;">📁 저장 위치 (사진/첨부/내보내기)</h3>
+      <p style="font-size:12.5px; color:#5B6E66; margin:0 0 12px;">OneDrive 등 동기화되는 폴더를 지정하면, 사진 첨부와 내보내기가 이 폴더 아래에 저장됩니다. 새로고침하면 권한이 풀리므로 다시 눌러 지정해주세요.</p>
+      <div class="folder-status">${dirHandle ? '✅ 폴더가 지정되어 있습니다 (' + esc(dirHandle.name) + ')' : '⚠ 저장 위치가 지정되지 않았습니다'}</div>
+      <button class="btn btn-primary btn-sm" data-action="pick-folder">폴더 선택</button>
+    </div>
+
+    <div class="card" style="padding:16px; margin-bottom:16px;">
+      <h3 style="margin:0 0 6px; font-size:14.5px;">📓 노션 연동</h3>
+      <p style="font-size:12.5px; color:#5B6E66; margin:0 0 12px; line-height:1.6;">
+        브라우저는 보안 정책(CORS) 때문에 노션 API를 직접 호출할 수 없어서, 중계 서버(Cloudflare Worker)를 하나 거칩니다.<br>
+        Worker 배포 방법은 <b>worker/README.md</b>를 참고하세요. 토큰은 여기 입력하지 않습니다 — Worker 쪽에만 안전하게 저장됩니다.
+      </p>
+      <div class="field"><label>Worker URL</label><input type="text" id="s-worker-url" placeholder="https://your-worker.your-subdomain.workers.dev" value="${esc(SETTINGS.workerUrl)}"></div>
+      <div class="field"><label>받은편지함 페이지 ID</label><input type="text" id="s-inbox-id" placeholder="예: 38a69164a5ee81dd87b8ee0524c60eaf" value="${esc(SETTINGS.inboxPageId)}"></div>
+      <button class="btn btn-primary btn-sm" data-action="save-notion-settings">저장</button>
+      <button class="btn btn-sm" data-action="test-notion">연결 테스트</button>
+    </div>
+
+    <div class="card" style="padding:16px;">
+      <h3 style="margin:0 0 6px; font-size:14.5px;">🏷 카테고리</h3>
+      <div style="margin-bottom:10px;">${catChips || '<span style="font-size:12.5px;color:#888;">없음</span>'}</div>
+      <div class="add-inline" style="padding:0;"><input type="text" id="new-category-input" placeholder="새 카테고리"><button class="btn btn-sm" data-action="add-category">+ 추가</button></div>
+    </div>
+  `;
+}
+async function sendToNotionInbox(text){
+  if(!SETTINGS.workerUrl || !SETTINGS.inboxPageId) return false;
+  try{
+    const res = await fetch(SETTINGS.workerUrl.replace(/\/$/,'') + '/notion-inbox', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ pageId: SETTINGS.inboxPageId, text })
+    });
+    return res.ok;
+  }catch(e){ return false; }
+}
+
+/* ---------------- EXPORT TAB (JSON/XLSX/Markdown) ---------------- */
+function renderExport(){
+  return `
+    <div class="page-header"><div><div class="page-title">내보내기 / 가져오기</div><div class="page-desc">백업용 JSON, 보고용 엑셀, 옵시디언용 마크다운으로 내보낼 수 있습니다.</div></div></div>
+    <div class="export-grid">
+      <div class="card export-card" style="padding:16px;">
+        <h3>JSON 백업</h3><p>전체 데이터를 그대로 백업합니다. 나중에 가져오기로 복원할 수 있습니다.</p>
+        <button class="btn btn-sm" data-action="export-json">JSON 다운로드</button>
+        <div style="margin-top:10px;"><input type="file" id="import-file" class="file-import-input" accept=".json,.xlsx"><button class="btn btn-sm" data-action="trigger-import">파일 가져오기</button></div>
+      </div>
+      <div class="card export-card" style="padding:16px;">
+        <h3>엑셀 내보내기</h3><p>일지/이슈를 시트로 정리해 다운로드합니다. 보고서 제출용으로 적합합니다.</p>
+        <button class="btn btn-sm" data-action="export-xlsx">엑셀 다운로드</button>
+      </div>
+      <div class="card export-card" style="grid-column:1/-1; padding:16px;">
+        <h3>마크다운 내보내기 (옵시디언 등)</h3><p>설정 탭에서 저장 위치를 먼저 지정하세요. 일일일지 / 위치 / 이슈 폴더로 나눠 저장됩니다.</p>
+        <div class="radio-row">
+          <label><input type="radio" name="exrange" value="all" checked> 전체</label>
+          <label><input type="radio" name="exrange" value="range"> 기간 선택</label>
+        </div>
+        <div id="range-fields" style="display:none;">
+          <div class="field-row"><div class="field"><label>시작일</label><input type="date" id="ex-start"></div><div class="field"><label>종료일</label><input type="date" id="ex-end"></div></div>
+        </div>
+        <button class="btn btn-primary btn-sm" data-action="export-md" ${dirHandle?'':'disabled'}>마크다운 내보내기</button>
+        <div class="note-box">${dirHandle?'':'⚠ 설정 탭에서 저장 위치를 먼저 지정해주세요.'}</div>
+      </div>
+    </div>
+  `;
+}
+function exportJSON(){
+  const blob = new Blob([JSON.stringify(DATA,null,2)], {type:'application/json'});
+  downloadBlob(blob, `시설일지_${todayStr()}.json`); showToast('JSON 파일을 다운로드했습니다');
+}
+function exportXLSX(){
+  const wb = XLSX.utils.book_new();
+  const entrySheet = DATA.entries.map(e=>({ 날짜:e.date, 위치:locLabel(getLoc(e.locationId)), 카테고리:e.category||'', 내용:e.content,
+    이슈여부:e.isIssue?'Y':'', 이슈상태:e.issueStatus||'', 첨부:(e.files||[]).join(', '), 노션전송:e.sentToNotion?'Y':'', ID:e.id }));
+  const issueSheet = DATA.issues.map(i=>({ 제목:i.title, 위치:locLabel(getLoc(i.locationId)), 발생일:i.createdDate, 현재상태:issueCurrentStatus(i.id), ID:i.id }));
+  wb.SheetNames.push('일지'); wb.Sheets['일지']=XLSX.utils.json_to_sheet(entrySheet);
+  wb.SheetNames.push('이슈'); wb.Sheets['이슈']=XLSX.utils.json_to_sheet(issueSheet);
+  const out = XLSX.write(wb,{bookType:'xlsx',type:'array'});
+  downloadBlob(new Blob([out],{type:'application/octet-stream'}), `시설일지_${todayStr()}.xlsx`); showToast('엑셀 파일을 다운로드했습니다');
+}
+function downloadBlob(blob, filename){
+  const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(url); a.remove();},500);
+}
+function handleImportFile(file){
+  const reader = new FileReader();
+  if(file.name.endsWith('.json')){
+    reader.onload=()=>{ try{ mergeImport(JSON.parse(reader.result)); }catch(e){ showToast('JSON 파일을 읽지 못했습니다'); } };
+    reader.readAsText(file);
+  } else {
+    reader.onload=()=>{
+      try{
+        const wb = XLSX.read(reader.result,{type:'array'});
+        const entrySheet = wb.Sheets['일지']?XLSX.utils.sheet_to_json(wb.Sheets['일지']):[];
+        const issueSheet = wb.Sheets['이슈']?XLSX.utils.sheet_to_json(wb.Sheets['이슈']):[];
+        const incoming = {entries:[],issues:[],categories:[],locations:[]};
+        issueSheet.forEach(row=>{ incoming.issues.push({id:row['ID']||uid(), title:row['제목'], locationId:null, createdDate:row['발생일'], _labelHint:row['위치']}); });
+        entrySheet.forEach(row=>{ incoming.entries.push({id:row['ID']||uid(), date:row['날짜'], category:row['카테고리']||'', content:row['내용']||'',
+          isIssue:row['이슈여부']==='Y', issueId:null, issueStatus:row['이슈상태']||null, files:(row['첨부']||'').split(',').map(s=>s.trim()).filter(Boolean),
+          sentToNotion:row['노션전송']==='Y', _labelHint:row['위치'], _t:new Date().toISOString()}); });
+        mergeImport(incoming, true);
+      }catch(e){ showToast('엑셀 파일을 읽지 못했습니다'); }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+}
+function ensureLocationByLabel(label){
+  if(!label) return null;
+  let floor, room;
+  if(label.includes(' / ')){ [floor,room]=label.split(' / '); } else { floor=label.replace(' (전체)','').trim(); room=''; }
+  let loc = DATA.locations.find(l=>l.floor===floor && (l.room||'')===(room||''));
+  if(!loc){ loc={id:uid(), floor, room:room||''}; DATA.locations.push(loc); }
+  return loc.id;
+}
+function mergeImport(incoming, fromExcel){
+  incoming.entries=incoming.entries||[]; incoming.issues=incoming.issues||[]; incoming.categories=incoming.categories||[]; incoming.locations=incoming.locations||[];
+  if(fromExcel){
+    incoming.issues.forEach(i=>{ i.locationId=ensureLocationByLabel(i._labelHint); });
+    incoming.entries.forEach(e=>{ e.locationId=ensureLocationByLabel(e._labelHint); });
+  } else {
+    incoming.locations.forEach(l=>{ if(!DATA.locations.find(x=>x.id===l.id)) DATA.locations.push(l); });
+  }
+  incoming.categories.forEach(c=>{ if(!DATA.categories.includes(c)) DATA.categories.push(c); });
+  incoming.issues.forEach(inc=>{ const idx=DATA.issues.findIndex(x=>x.id===inc.id); if(idx>=0) DATA.issues[idx]=inc; else DATA.issues.push(inc); });
+  incoming.entries.forEach(inc=>{ const idx=DATA.entries.findIndex(x=>x.id===inc.id); if(idx>=0) DATA.entries[idx]=inc; else DATA.entries.push(inc); });
+  saveData(); render(); showToast('가져오기를 완료했습니다');
+}
+
+/* ---- Markdown export + file storage via File System Access API ---- */
+function sanitizeFilename(s){ return String(s).replace(/[\\/:*?"<>|]/g,'-').trim().slice(0,120) || 'untitled'; }
+function safeNoteName(name){ return sanitizeFilename(String(name).replace(/#/g,'_')); }
+function wikilink(name){ const safe=safeNoteName(name); return safe===String(name) ? `[[${safe}]]` : `[[${safe}|${esc_md(name)}]]`; }
+function esc_md(s){ return String(s).replace(/\|/g,'\\|'); }
+async function getOrCreateDir(parent, name){ return await parent.getDirectoryHandle(name, {create:true}); }
+async function writeFile(dirH, filename, content){
+  const fh = await dirH.getFileHandle(filename, {create:true}); const w = await fh.createWritable(); await w.write(content); await w.close();
+}
+async function writeFileBinary(dirH, filename, fileObj){
+  const fh = await dirH.getFileHandle(filename, {create:true}); const w = await fh.createWritable(); await w.write(fileObj); await w.close();
+}
+function buildDailyMD(date, entries){
+  let body = `---\ndate: ${date}\ntags: [일일일지]\n---\n# ${date} 일일일지\n\n`;
+  entries.forEach(e=>{
+    const loc=getLoc(e.locationId); const locName = loc?(loc.room||loc.floor):'미지정';
+    body += `## ${loc?wikilink(locName):'미지정'}${e.category?(' · '+e.category):''}\n${e.content}\n`;
+    if(e.isIssue) body += `#이슈 #${e.issueStatus}\n`;
+    if(e.files&&e.files.length) e.files.forEach(f=>{ body += `![[${f}]]\n`; });
+    body += `\n`;
+  });
+  return body;
+}
+function buildLocationMD(loc){
+  if(loc.room){
+    const es = entriesForLocation(loc.id).slice().reverse();
+    let body = `---\nlocation: ${loc.room}\nfloor: ${loc.floor}\ntags: [위치]\n---\n# ${loc.room}\n\n${wikilink(loc.floor)}\n\n`;
+    if(loc.info) body += `## 정보\n${loc.info}\n\n`;
+    body += `## 타임라인\n`;
+    es.forEach(e=>{ body += `- ${e.date} — ${e.content}`; if(e.isIssue) body += ` #이슈 #${e.issueStatus}`; body += `\n`; });
+    return body;
+  } else {
+    const children = DATA.locations.filter(l=>l.floor===loc.floor && l.room);
+    const es = entriesForLocation(loc.id).slice().reverse();
+    let body = `---\nfloor: ${loc.floor}\ntags: [위치, 층]\n---\n# ${loc.floor}\n\n## 하위 설비\n`;
+    children.forEach(c=>{ body += `- ${wikilink(c.room)}\n`; });
+    body += `\n## 층 전체 기록\n`;
+    es.forEach(e=>{ body += `- ${e.date} — ${e.content}\n`; });
+    return body;
+  }
+}
+function buildIssueMD(issue){
+  const loc = getLoc(issue.locationId); const locName = loc?(loc.room||loc.floor):'';
+  const es = entriesForIssue(issue.id); const status = issueCurrentStatus(issue.id);
+  let body = `---\nlocation: ${locName}\nfloor: ${loc?loc.floor:''}\nstatus: ${status}\ncreated: ${issue.createdDate}\ntags: [이슈]\n---\n# ${issue.title}\n\n위치: ${loc?wikilink(locName):''}\n\n## 진행 상황\n`;
+  es.forEach(e=>{ body += `- ${e.date} — ${e.issueStatus}: ${e.content}\n`; });
+  return body;
+}
+async function exportMarkdown(){
+  if(!dirHandle){ showToast('먼저 설정 탭에서 저장 위치를 선택해주세요'); return; }
+  const rangeMode = document.querySelector('input[name="exrange"]:checked').value;
+  let startD=null, endD=null;
+  if(rangeMode==='range'){
+    startD = document.getElementById('ex-start').value; endD = document.getElementById('ex-end').value;
+    if(!startD||!endD){ showToast('시작일/종료일을 입력해주세요'); return; }
+  }
+  try{
+    const dailyDir = await getOrCreateDir(dirHandle, '일일일지');
+    const locDir = await getOrCreateDir(dirHandle, '위치');
+    const issueDir = await getOrCreateDir(dirHandle, '이슈');
+    let dates = [...new Set(DATA.entries.map(e=>e.date))];
+    if(rangeMode==='range') dates = dates.filter(d=>d>=startD && d<=endD);
+    for(const d of dates){
+      const entries = DATA.entries.filter(e=>e.date===d).sort((a,b)=>a._t.localeCompare(b._t));
+      await writeFile(dailyDir, sanitizeFilename(d)+'.md', buildDailyMD(d, entries));
+    }
+    let touchedLocIds = new Set(DATA.entries.filter(e=> rangeMode==='all' || (e.date>=startD && e.date<=endD)).map(e=>e.locationId));
+    let locsToWrite = rangeMode==='all' ? DATA.locations : DATA.locations.filter(l=>touchedLocIds.has(l.id));
+    for(const loc of locsToWrite){ await writeFile(locDir, safeNoteName(loc.room||loc.floor)+'.md', buildLocationMD(loc)); }
+    let issuesToWrite = DATA.issues;
+    if(rangeMode==='range') issuesToWrite = DATA.issues.filter(i=> entriesForIssue(i.id).some(e=>e.date>=startD && e.date<=endD));
+    for(const issue of issuesToWrite){ await writeFile(issueDir, safeNoteName(issue.title)+'.md', buildIssueMD(issue)); }
+    showToast(`내보내기 완료: 일지 ${dates.length}개 / 위치 ${locsToWrite.length}개 / 이슈 ${issuesToWrite.length}개`);
+  }catch(err){ showToast('내보내기 중 오류: 권한을 다시 확인해주세요'); }
+}
+async function pickFolder(){
+  try{ dirHandle = await window.showDirectoryPicker(); showToast('저장 위치가 설정되었습니다'); render(); }
+  catch(e){ /* cancelled */ }
+}
+
+/* ---------------- EVENT BINDING ---------------- */
+function bindGlobalEvents(){
+  document.querySelectorAll('[data-nav]').forEach(el=>{
+    el.addEventListener('click', ()=>{ UI.tab=el.getAttribute('data-nav'); UI.selectedIssueId=null; UI.selectedLocId=null; render(); });
+  });
+}
+document.addEventListener('click', function(e){
+  const t = e.target;
+  if(t.closest('[data-action="open-entry-form"]')) return openEntryForm(null);
+  if(t.closest('[data-action="close-modal"]')) return closeModal();
+  if(t.closest('[data-action="save-entry"]')){ const id=t.closest('[data-action="save-entry"]').getAttribute('data-id'); return saveEntryFromForm(id||null); }
+  if(t.closest('[data-action="delete-entry"]')){ if(confirm('이 항목을 삭제할까요?')){ const id=t.closest('[data-action="delete-entry"]').getAttribute('data-id'); return deleteEntry(id); } return; }
+  if(t.closest('[data-edit-entry]')){ const id=t.closest('[data-edit-entry]').getAttribute('data-edit-entry'); return openEntryForm(id); }
+  if(t.closest('[data-pick-date]')){ UI.selectedDate=t.closest('[data-pick-date]').getAttribute('data-pick-date'); return render(); }
+  if(t.closest('[data-remove-file]')){ const i=+t.closest('[data-remove-file]').getAttribute('data-remove-file'); pendingFiles.splice(i,1); return renderFilesPreview(); }
+  if(t.closest('[data-action="delete-loc"]')){
+    e.stopPropagation();
+    const id=t.closest('[data-action="delete-loc"]').getAttribute('data-id');
+    const used = DATA.entries.some(en=>en.locationId===id);
+    if(used && !confirm('이 위치를 참조하는 기록이 있습니다. 그래도 삭제할까요?')) return;
+    DATA.locations = DATA.locations.filter(l=>l.id!==id); saveData(); render(); showToast('삭제되었습니다'); return;
+  }
+  if(t.closest('[data-open-issue]')){ UI.selectedIssueId=t.closest('[data-open-issue]').getAttribute('data-open-issue'); return render(); }
+  if(t.closest('[data-action="back-to-issues"]')){ UI.selectedIssueId=null; return render(); }
+  if(t.closest('[data-action="back-to-locations"]')){ UI.selectedLocId=null; return render(); }
+  if(t.closest('[data-open-loc]')){ UI.selectedLocId=t.closest('[data-open-loc]').getAttribute('data-open-loc'); return render(); }
+  if(t.closest('[data-action="open-loc"]')){ UI.selectedLocId=t.closest('[data-action="open-loc"]').getAttribute('data-id'); return render(); }
+  if(t.closest('[data-toggle-floor]')){ const f=t.closest('[data-toggle-floor]').getAttribute('data-toggle-floor'); UI.openFloors[f]=!UI.openFloors[f]; return render(); }
+  if(t.closest('[data-action="add-floor"]')){
+    const inp=document.getElementById('new-floor-input'); const val=inp.value.trim();
+    if(!val){ showToast('층 이름을 입력해주세요'); return; }
+    if(DATA.locations.find(l=>l.floor===val && !l.room)){ showToast('이미 존재하는 층입니다'); return; }
+    DATA.locations.push({id:uid(), floor:val, room:''}); saveData(); render(); showToast('층이 추가되었습니다'); return;
+  }
+  if(t.closest('[data-action="add-room"]')){
+    const floor=t.closest('[data-action="add-room"]').getAttribute('data-floor');
+    const inp=document.getElementById('new-room-'+floor); const val=inp.value.trim();
+    if(!val){ showToast('설비명을 입력해주세요'); return; }
+    DATA.locations.push({id:uid(), floor, room:val}); saveData(); render(); showToast('설비가 추가되었습니다'); return;
+  }
+  if(t.closest('[data-action="save-loc-info"]')){
+    const id=t.closest('[data-action="save-loc-info"]').getAttribute('data-id'); const loc=getLoc(id);
+    loc.info = document.getElementById('loc-info').value; saveData(); showToast('정보가 저장되었습니다'); return;
+  }
+  if(t.closest('[data-action="add-category"]')){
+    const inp=document.getElementById('new-category-input'); const val=inp.value.trim();
+    if(!val){ showToast('카테고리명을 입력해주세요'); return; }
+    if(DATA.categories.includes(val)){ showToast('이미 있는 카테고리입니다'); return; }
+    DATA.categories.push(val); saveData(); render(); showToast('카테고리가 추가되었습니다'); return;
+  }
+  if(t.closest('[data-action="delete-category"]')){
+    const name=t.closest('[data-action="delete-category"]').getAttribute('data-name');
+    DATA.categories = DATA.categories.filter(c=>c!==name); saveData(); render(); return;
+  }
+  if(t.closest('[data-action="export-json"]')) return exportJSON();
+  if(t.closest('[data-action="export-xlsx"]')) return exportXLSX();
+  if(t.closest('[data-action="trigger-import"]')) return document.getElementById('import-file').click();
+  if(t.closest('[data-action="pick-folder"]')) return pickFolder();
+  if(t.closest('[data-action="export-md"]')) return exportMarkdown();
+  if(t.closest('[data-action="save-notion-settings"]')){
+    SETTINGS.workerUrl = document.getElementById('s-worker-url').value.trim();
+    SETTINGS.inboxPageId = document.getElementById('s-inbox-id').value.trim();
+    saveSettings(); showToast('노션 연동 설정이 저장되었습니다'); return;
+  }
+  if(t.closest('[data-action="test-notion"]')){
+    (async ()=>{
+      SETTINGS.workerUrl = document.getElementById('s-worker-url').value.trim();
+      SETTINGS.inboxPageId = document.getElementById('s-inbox-id').value.trim();
+      saveSettings();
+      showToast('테스트 전송 중...');
+      const ok = await sendToNotionInbox('✅ 연결 테스트 — 이 줄은 지워도 됩니다 (' + new Date().toLocaleString('ko-KR') + ')');
+      showToast(ok ? '연결 성공! 받은편지함을 확인해보세요.' : '연결 실패. Worker URL과 페이지 ID, Worker의 NOTION_TOKEN 설정을 확인해주세요.');
+    })();
+    return;
+  }
+});
+document.addEventListener('change', function(e){
+  if(e.target.id==='date-picker'){ UI.selectedDate=e.target.value; return render(); }
+  if(e.target.id==='import-file'){ const file=e.target.files[0]; if(file) handleImportFile(file); e.target.value=''; return; }
+  if(e.target.name==='exrange'){ document.getElementById('range-fields').style.display = e.target.value==='range' ? 'block':'none'; return; }
+});
+
+/* ---------------- INIT ---------------- */
+(function init(){ loadData(); render(); })();
+
+})();
+</script>
+</body>
+</html>
