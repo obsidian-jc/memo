@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>시설 기록</title>
+<meta name="theme-color" content="#111">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="시설기록">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{
+  --bg:#111;--s:#1C1C1E;--s2:#2C2C2E;--line:#333;
+  --text:#F5F5F0;--muted:#8E8E93;
+  --inbox:#5B8DEF;--task:#34C759;--contact:#FF9F0A;--history:#FF6B6B;--docs:#BF5AF2;
+  --safe-b:env(safe-area-inset-bottom);
+}
+html,body{height:100%;background:var(--bg);color:var(--text);
+  font-family:-apple-system,'SF Pro Text','Helvetica Neue',sans-serif;}
+body{display:flex;flex-direction:column;height:100dvh;overflow:hidden;}
+
+.header{
+  padding:14px 18px;padding-top:calc(14px + env(safe-area-inset-top));
+  border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.header-info .t{font-size:16px;font-weight:700;}
+.header-info .d{font-size:12px;color:var(--muted);margin-top:2px;}
+.gear-btn{background:none;border:none;font-size:20px;cursor:pointer;padding:4px;}
+
+.input-area{flex:1;padding:14px 16px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;}
+
+textarea{
+  flex:1;min-height:110px;background:var(--s);border:1.5px solid var(--line);
+  border-radius:14px;padding:14px;color:var(--text);font-size:16px;
+  line-height:1.6;resize:none;-webkit-appearance:none;
+  font-family:inherit;
+}
+textarea:focus{outline:none;border-color:#555;}
+textarea::placeholder{color:#444;}
+
+/* 분류 미리보기 */
+.preview{display:none;flex-direction:column;gap:6px;}
+.preview.show{display:flex;}
+.preview-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+.preview-items{display:flex;flex-direction:column;gap:5px;}
+.pi{
+  display:flex;align-items:flex-start;gap:8px;background:var(--s);
+  border:1px solid var(--line);border-radius:10px;padding:10px 12px;
+  border-left:3px solid var(--c,#555);
+}
+.pi .emoji{font-size:17px;line-height:1.3;flex-shrink:0;}
+.pi .right{flex:1;min-width:0;}
+.pi .cat{font-size:11px;font-weight:700;color:var(--c,#888);margin-bottom:2px;}
+.pi .txt{font-size:13.5px;color:var(--text);line-height:1.45;word-break:keep-all;}
+
+/* 사진 */
+.photos{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 0;}
+.photos::-webkit-scrollbar{display:none;}
+.photos:empty{display:none;}
+.thumb{position:relative;width:68px;height:68px;border-radius:10px;overflow:hidden;flex-shrink:0;}
+.thumb img{width:100%;height:100%;object-fit:cover;}
+.thumb .del{position:absolute;top:3px;right:3px;width:18px;height:18px;
+  border-radius:50%;background:rgba(0,0,0,.7);border:none;color:#fff;
+  font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.photo-add-btn{width:68px;height:68px;border-radius:10px;border:1.5px dashed var(--line);
+  background:none;color:var(--muted);font-size:26px;cursor:pointer;flex-shrink:0;}
+input[type=file]{display:none;}
+
+/* 푸터 버튼들 */
+.footer{padding:10px 16px;padding-bottom:calc(10px + var(--safe-b));border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px;}
+.btn-row{display:flex;gap:8px;}
+.btn{flex:1;padding:14px;border-radius:13px;font-size:15px;font-weight:700;border:none;cursor:pointer;}
+.btn:active{opacity:.75;}
+.btn-analyze{background:var(--s2);color:var(--muted);}
+.btn-send{background:#fff;color:#000;}
+.btn-send:disabled{background:#333;color:#666;}
+
+/* 토스트 */
+.toast{position:fixed;top:calc(60px + env(safe-area-inset-top));left:50%;
+  transform:translateX(-50%) translateY(-8px);background:#fff;color:#111;
+  padding:10px 20px;border-radius:22px;font-size:14px;font-weight:600;
+  box-shadow:0 4px 20px rgba(0,0,0,.4);opacity:0;transition:all .22s;
+  white-space:nowrap;z-index:99;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* 설정 시트 */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;
+  display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .2s;}
+.overlay.open{opacity:1;pointer-events:auto;}
+.sheet{background:var(--s);border-radius:20px 20px 0 0;width:100%;
+  padding:20px;padding-bottom:calc(28px + var(--safe-b));
+  transform:translateY(100%);transition:transform .28s;}
+.overlay.open .sheet{transform:translateY(0);}
+.sheet h2{font-size:17px;font-weight:700;margin-bottom:16px;}
+.sheet label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;}
+.sheet input{width:100%;background:var(--s2);border:1px solid var(--line);
+  border-radius:10px;padding:12px;color:var(--text);font-size:15px;
+  margin-bottom:12px;-webkit-appearance:none;font-family:inherit;}
+.sheet input:focus{outline:none;border-color:#666;}
+.s-btns{display:flex;gap:8px;margin-top:4px;}
+.s-btns button{flex:1;padding:13px;border-radius:12px;font-size:15px;font-weight:600;border:none;cursor:pointer;}
+.s-save{background:#fff;color:#000;}
+.s-cancel{background:var(--s2);color:var(--muted);}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-info">
+    <div class="t">시설 기록</div>
+    <div class="d" id="hdate"></div>
+  </div>
+  <button class="gear-btn" id="open-cfg">⚙️</button>
+</div>
+
+<div class="input-area">
+  <textarea id="note" placeholder="편하게 쓰세요. 분류는 자동으로 해드립니다.
+예) 청관제 업체 내일 방문예정, 차량번호 12가3456, 담당자 김철수 010-1234-5678"></textarea>
+
+  <!-- 분류 미리보기 -->
+  <div class="preview" id="preview">
+    <div class="preview-label">분류 미리보기</div>
+    <div class="preview-items" id="preview-items"></div>
+  </div>
+
+  <!-- 사진 -->
+  <div class="photos" id="photos"></div>
+  <input type="file" id="file-in" multiple accept="image/*,video/*" capture="environment">
+</div>
+
+<div class="footer">
+  <div class="btn-row">
+    <button class="btn btn-analyze" id="btn-photo">📷 사진</button>
+    <button class="btn btn-analyze" id="btn-analyze">🔍 분류 확인</button>
+  </div>
+  <button class="btn btn-send" id="btn-send" disabled>노션에 저장</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="overlay" id="overlay">
+  <div class="sheet">
+    <h2>⚙️ 설정</h2>
+    <label>Worker URL</label>
+    <input type="url" id="cfg-worker" placeholder="https://your-worker.workers.dev">
+    <label>받은편지함 페이지 ID</label>
+    <input type="text" id="cfg-page" placeholder="38a69164a5ee81dd87b8ee0524c60eaf">
+    <div class="s-btns">
+      <button class="s-cancel" id="cfg-cancel">취소</button>
+      <button class="s-save" id="cfg-save">저장</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ── 날짜 ──
+  const now = new Date();
+  const days=['일','월','화','수','목','금','토'];
+  document.getElementById('hdate').textContent =
+    `${now.getFullYear()}.${p(now.getMonth()+1)}.${p(now.getDate())} (${days[now.getDay()]})`;
+  function p(n){return n<10?'0'+n:''+n;}
+
+  // ── 분류 규칙 ──
+  const CATS = [
+    {
+      key:'task', emoji:'📋', name:'업무관리', color:'#34C759',
+      kw:['방문예정','방문 예정','일정','예정','협조','협조문','요청','점검 예정','점검예정',
+          '내일','모레','다음주','이번주','오늘 오후','오늘 오전','회의','미팅','공지',
+          '신청','접수','제출','보고','결재','승인','처리','확인 부탁','부탁드립니다','정기']
+    },
+    {
+      key:'contact', emoji:'📞', name:'연락처·업체', color:'#FF9F0A',
+      kw:['전화번호','전화 번호','010-','011-','016-','017-','018-','019-','휴대폰',
+          '연락처','담당자','업체','차량번호','차량 번호','이메일','@','팩스',
+          '대표','사장','기사','직통','내선','문자','톡','카톡']
+    },
+    {
+      key:'history', emoji:'🛠', name:'이력·설비', color:'#FF6B6B',
+      kw:['고장','수리','점검','교체','이력','설비','부품','누수','누전','소음','이상',
+          '펌프','보일러','엘리베이터','전기','가스','배관','밸브','필터','청소','세척',
+          '완료','수선','파손','교체완료','수리완료','A/S','as','애프터','하자','조치']
+    },
+    {
+      key:'docs', emoji:'📁', name:'자료', color:'#BF5AF2',
+      kw:['도면','매뉴얼','설명서','사진','자료','인수인계','인계','문서','계약서',
+          '견적서','보고서','첨부','파일','pdf','엑셀','저장','백업','카탈로그','스펙']
+    },
+    {
+      key:'inbox', emoji:'📥', name:'받은편지함', color:'#5B8DEF',
+      kw:[] // 기본값
+    }
+  ];
+
+  // 텍스트를 문장 단위로 분리해서 각각 분류
+  function classify(text) {
+    // 문장 분리: 쉼표, 줄바꿈, 마침표 기준
+    const sentences = text.split(/[,\n.·]+/).map(s=>s.trim()).filter(s=>s.length>1);
+    
+    const results = []; // {cat, texts:[]}
+    const catMap = {};
+
+    sentences.forEach(s => {
+      let matched = null;
+      let maxScore = 0;
+
+      for(const cat of CATS) {
+        if(cat.key === 'inbox') continue;
+        let score = 0;
+        for(const kw of cat.kw) {
+          if(s.includes(kw)) score += kw.length; // 긴 키워드일수록 높은 점수
+        }
+        if(score > maxScore) { maxScore = score; matched = cat; }
+      }
+
+      // 전화번호 패턴 강제 감지
+      if(/\d{2,3}-\d{3,4}-\d{4}/.test(s) || /01\d{8,9}/.test(s.replace(/-/g,''))) {
+        matched = CATS.find(c=>c.key==='contact');
+      }
+
+      const cat = matched || CATS.find(c=>c.key==='inbox');
+      if(!catMap[cat.key]) { catMap[cat.key] = {...cat, texts:[]}; }
+      catMap[cat.key].texts.push(s);
+    });
+
+    // 결과가 없으면 전체를 받은편지함으로
+    if(Object.keys(catMap).length === 0) {
+      const inbox = CATS.find(c=>c.key==='inbox');
+      catMap['inbox'] = {...inbox, texts:[text.trim()]};
+    }
+
+    return Object.values(catMap);
+  }
+
+  // ── 상태 ──
+  let classified = []; // [{cat, texts:[]}]
+  let pendingFiles = [];
+
+  // ── 분류 확인 버튼 ──
+  document.getElementById('btn-analyze').addEventListener('click', ()=>{
+    const txt = document.getElementById('note').value.trim();
+    if(!txt){ toast('내용을 먼저 입력해주세요','err'); return; }
+    classified = classify(txt);
+    renderPreview();
+    document.getElementById('btn-send').disabled = false;
+    toast('분류 완료! 내용 확인 후 저장하세요','ok');
+  });
+
+  function renderPreview(){
+    const box = document.getElementById('preview-items');
+    box.innerHTML = classified.map(c=>`
+      <div class="pi" style="--c:${c.color}">
+        <span class="emoji">${c.emoji}</span>
+        <div class="right">
+          <div class="cat">${c.name}</div>
+          <div class="txt">${c.texts.map(t=>escHtml(t)).join('<br>')}</div>
+        </div>
+      </div>`).join('');
+    document.getElementById('preview').classList.add('show');
+  }
+
+  function escHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+  // ── 저장 버튼 ──
+  document.getElementById('btn-send').addEventListener('click', async()=>{
+    const workerUrl = localStorage.getItem('fc-worker');
+    const pageId    = localStorage.getItem('fc-page');
+    if(!workerUrl||!pageId){ toast('⚙️ 설정에서 Worker URL과 페이지 ID를 먼저 입력해주세요','err'); return; }
+    if(!classified.length){ toast('분류 확인을 먼저 눌러주세요','err'); return; }
+
+    document.getElementById('btn-send').disabled = true;
+    toast('노션에 저장 중...','info');
+
+    const timeStr = `${p(now.getHours())}:${p(now.getMinutes())}`;
+    let allOk = true;
+
+    for(const c of classified){
+      const header = `${c.emoji} [${c.name}] ${now.getFullYear()}.${p(now.getMonth()+1)}.${p(now.getDate())} ${timeStr}`;
+      const body = c.texts.join(' / ');
+      const line = `${header} — ${body}`;
+      try{
+        const res = await fetch(workerUrl.replace(/\/$/,'')+'/notion-inbox',{
+          method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({pageId,text:line})
+        });
+        if(!res.ok) allOk=false;
+      }catch(e){ allOk=false; }
+    }
+
+    // 사진 전송
+    const files = pendingFiles.filter(Boolean);
+    if(files.length){
+      const caption = classified.map(c=>c.texts.join(' ')).join(' ').slice(0,60);
+      for(const f of files){
+        try{
+          const fd=new FormData();
+          fd.append('pageId',pageId);fd.append('caption',caption);fd.append('file',f,f.name);
+          await fetch(workerUrl.replace(/\/$/,'')+'/notion-photo',{method:'POST',body:fd});
+        }catch(e){}
+      }
+    }
+
+    if(allOk){
+      toast(`${classified.length}개 항목을 노션에 저장했습니다 ✓`,'ok');
+      document.getElementById('note').value='';
+      classified=[];pendingFiles=[];
+      document.getElementById('preview').classList.remove('show');
+      document.getElementById('preview-items').innerHTML='';
+      document.querySelectorAll('.thumb').forEach(el=>el.remove());
+    } else {
+      toast('일부 항목 저장에 실패했습니다. Worker를 확인해주세요','err');
+    }
+    document.getElementById('btn-send').disabled = false;
+  });
+
+  // ── 사진 ──
+  document.getElementById('btn-photo').addEventListener('click',()=>document.getElementById('file-in').click());
+  document.getElementById('file-in').addEventListener('change',(e)=>{
+    Array.from(e.target.files).forEach(addFile);e.target.value='';
+  });
+  function addFile(file){
+    pendingFiles.push(file);
+    const idx=pendingFiles.length-1;
+    const wrap=document.createElement('div');wrap.className='thumb';
+    const img=document.createElement('img');img.src=URL.createObjectURL(file);
+    const del=document.createElement('button');del.className='del';del.textContent='×';
+    del.onclick=()=>{pendingFiles[idx]=null;wrap.remove();};
+    wrap.append(img,del);
+    document.getElementById('photos').append(wrap);
+  }
+
+  // ── 설정 시트 ──
+  const overlay=document.getElementById('overlay');
+  document.getElementById('open-cfg').addEventListener('click',()=>{
+    document.getElementById('cfg-worker').value=localStorage.getItem('fc-worker')||'';
+    document.getElementById('cfg-page').value=localStorage.getItem('fc-page')||'';
+    overlay.classList.add('open');
+  });
+  document.getElementById('cfg-cancel').addEventListener('click',()=>overlay.classList.remove('open'));
+  overlay.addEventListener('click',(e)=>{if(e.target===overlay)overlay.classList.remove('open');});
+  document.getElementById('cfg-save').addEventListener('click',()=>{
+    localStorage.setItem('fc-worker',document.getElementById('cfg-worker').value.trim());
+    localStorage.setItem('fc-page',document.getElementById('cfg-page').value.trim());
+    overlay.classList.remove('open');
+    toast('설정이 저장됐습니다','ok');
+  });
+
+  // 처음 열었을 때 설정 없으면 자동으로 시트 열기
+  if(!localStorage.getItem('fc-worker')){
+    setTimeout(()=>overlay.classList.add('open'),600);
+  }
+
+  // ── 토스트 ──
+  let toastTimer;
+  function toast(msg,type='info'){
+    const el=document.getElementById('toast');
+    el.textContent=msg;el.className=`toast show`;
+    clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2800);
+  }
+
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
+})();
+</script>
+</body>
+</html>
