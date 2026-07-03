@@ -292,14 +292,21 @@ input[type=file]{display:none;}
 
     // 사진 전송
     const files = pendingFiles.filter(Boolean);
+    let photoErrorMsg = '';
     if(files.length){
       const caption = classified.map(c=>c.texts.join(' ')).join(' ').slice(0,60);
       for(const f of files){
         try{
           const fd=new FormData();
           fd.append('pageId',pageId);fd.append('caption',caption);fd.append('file',f,f.name);
-          await fetch(workerUrl.replace(/\/$/,'')+'/notion-photo',{method:'POST',body:fd});
-        }catch(e){}
+          const pres = await fetch(workerUrl.replace(/\/$/,'')+'/notion-photo',{method:'POST',body:fd});
+          if(!pres.ok){
+            allOk=false;
+            let detail='';
+            try{ detail=(await pres.json()).error||''; }catch(e){}
+            photoErrorMsg = `사진 업로드 실패 (${pres.status})${detail?': '+detail:''}`;
+          }
+        }catch(e){ allOk=false; photoErrorMsg = '사진 업로드 중 네트워크 오류: '+e.message; }
       }
     }
 
@@ -311,7 +318,7 @@ input[type=file]{display:none;}
       document.getElementById('preview-items').innerHTML='';
       document.querySelectorAll('.thumb').forEach(el=>el.remove());
     } else {
-      toast('일부 항목 저장에 실패했습니다. Worker를 확인해주세요','err');
+      toast(photoErrorMsg || '일부 항목 저장에 실패했습니다. Worker를 확인해주세요','err');
     }
     document.getElementById('btn-send').disabled = false;
   });
