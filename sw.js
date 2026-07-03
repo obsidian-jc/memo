@@ -3,7 +3,7 @@
 //  2) 현장에서 신호가 약할 때도 앱 화면 자체는 바로 열리게 해줍니다.
 // 데이터는 항상 localStorage/노션에서 오므로, 캐시가 오래돼도 실제 기록에는 영향 없습니다.
 
-const CACHE_NAME = 'wonebailey-facility-v1';
+const CACHE_NAME = 'wonebailey-facility-v2';
 const SHELL_FILES = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (event) => {
@@ -27,6 +27,22 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
 
+  // HTML 파일(form.html, index.html)은 항상 최신 버전을 먼저 시도합니다.
+  // 새 기능(카테고리 추가 등)이 캐시 때문에 안 보이는 문제를 막기 위함입니다.
+  const isHtml = event.request.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname.endsWith('/');
+  if (isHtml) {
+    event.respondWith(
+      fetch(event.request)
+        .then((res) => {
+          if (res.ok) caches.open(CACHE_NAME).then((c) => c.put(event.request, res.clone()));
+          return res;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // 아이콘/매니페스트 등은 기존처럼 캐시 우선(오프라인 대비, 자주 안 바뀜)
   event.respondWith(
     caches.match(event.request).then((cached) => {
       const fetchPromise = fetch(event.request)
