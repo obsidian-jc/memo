@@ -328,15 +328,48 @@ input[type=file]{display:none;}
   document.getElementById('file-in').addEventListener('change',(e)=>{
     Array.from(e.target.files).forEach(addFile);e.target.value='';
   });
-  function addFile(file){
-    pendingFiles.push(file);
-    const idx=pendingFiles.length-1;
+
+  // 이미지를 최대 1600px, JPEG 75% 품질로 리사이즈/압축 (용량 5~10배 감소 → 업로드 속도 개선)
+  async function compressImage(file, maxDim=1600, quality=0.75){
+    const bitmap = await createImageBitmap(file);
+    let { width, height } = bitmap;
+    if (Math.max(width, height) > maxDim) {
+      const scale = maxDim / Math.max(width, height);
+      width = Math.round(width * scale);
+      height = Math.round(height * scale);
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = width; canvas.height = height;
+    canvas.getContext('2d').drawImage(bitmap, 0, 0, width, height);
+    const blob = await new Promise((res) => canvas.toBlob(res, 'image/jpeg', quality));
+    const base = (file.name || 'photo').replace(/\.[^.]+$/, '');
+    return new File([blob], base + '.jpg', { type: 'image/jpeg' });
+  }
+
+  async function addFile(file){
+    const idx = pendingFiles.length;
+    pendingFiles.push(file); // 압축 끝나기 전까지는 원본으로 채워둠
     const wrap=document.createElement('div');wrap.className='thumb';
-    const img=document.createElement('img');img.src=URL.createObjectURL(file);
+    const img=document.createElement('img');
     const del=document.createElement('button');del.className='del';del.textContent='×';
     del.onclick=()=>{pendingFiles[idx]=null;wrap.remove();};
     wrap.append(img,del);
     document.getElementById('photos').append(wrap);
+
+    if (file.type && file.type.startsWith('image/')) {
+      try {
+        const compressed = await compressImage(file);
+        if (pendingFiles[idx] !== null) { // 압축 도중 삭제 안 눌렸으면 교체
+          pendingFiles[idx] = compressed;
+          img.src = URL.createObjectURL(compressed);
+        }
+      } catch (e) {
+        // 압축 실패 시 원본 그대로 사용 (동영상 등 이미지가 아닌 경우도 여기로)
+        img.src = URL.createObjectURL(file);
+      }
+    } else {
+      img.src = URL.createObjectURL(file); // 동영상 등은 압축 없이 그대로
+    }
   }
 
   // ── 설정 시트 ──
