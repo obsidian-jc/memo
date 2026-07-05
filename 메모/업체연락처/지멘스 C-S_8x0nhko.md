@@ -3,6 +3,7 @@ type: 메모
 category: "업체연락처"
 title: "지멘스 C/S"
 source: notion_backup
+phone: "080-989-7119"
 tags: [메모, 업체연락처]
 ---
 

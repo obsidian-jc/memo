@@ -3,6 +3,7 @@ type: 메모
 category: "업체연락처"
 title: "졸라펌프"
 source: notion_backup
+phone: "010-5514-5630"
 tags: [메모, 업체연락처]
 ---
 

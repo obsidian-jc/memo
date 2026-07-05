@@ -3,6 +3,7 @@ type: 메모
 category: "업체연락처"
 title: "가경코스모"
 source: notion_backup
+phone: "010-4423-1084"
 tags: [메모, 업체연락처]
 ---
 

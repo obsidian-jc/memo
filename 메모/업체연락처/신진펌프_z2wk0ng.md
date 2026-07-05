@@ -3,6 +3,7 @@ type: 메모
 category: "업체연락처"
 title: "신진펌프"
 source: notion_backup
+phone: "010-5228-1192"
 tags: [메모, 업체연락처]
 ---
 

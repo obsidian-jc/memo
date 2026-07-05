@@ -3,6 +3,7 @@ type: 메모
 category: "업체연락처"
 title: "장한기술 (현장기사)"
 source: notion_backup
+phone: "010-2749-5476"
 tags: [메모, 업체연락처]
 ---
 

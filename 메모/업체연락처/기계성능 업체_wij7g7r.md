@@ -3,6 +3,7 @@ type: 메모
 category: "업체연락처"
 title: "기계성능 업체"
 source: notion_backup
+phone: "010-6621-1271"
 tags: [메모, 업체연락처]
 ---
 

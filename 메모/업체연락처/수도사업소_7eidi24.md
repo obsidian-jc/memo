@@ -3,6 +3,7 @@ type: 메모
 category: "업체연락처"
 title: "수도사업소"
 source: notion_backup
+phone: "010-7610-3724"
 tags: [메모, 업체연락처]
 ---
 

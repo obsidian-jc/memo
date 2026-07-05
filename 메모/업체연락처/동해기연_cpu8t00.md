@@ -3,6 +3,7 @@ type: 메모
 category: "업체연락처"
 title: "동해기연"
 source: notion_backup
+phone: "010-6348-0384"
 tags: [메모, 업체연락처]
 ---
 

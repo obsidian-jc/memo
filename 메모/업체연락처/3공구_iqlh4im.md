@@ -3,6 +3,7 @@ type: 메모
 category: "업체연락처"
 title: "3공구"
 source: notion_backup
+phone: "010-4192-8787"
 tags: [메모, 업체연락처]
 ---
 

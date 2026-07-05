@@ -3,6 +3,7 @@ type: 메모
 category: "업체연락처"
 title: "장한기술"
 source: notion_backup
+phone: "010-8634-3080"
 tags: [메모, 업체연락처]
 ---
 

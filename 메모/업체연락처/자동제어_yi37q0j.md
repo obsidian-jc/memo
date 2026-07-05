@@ -3,6 +3,7 @@ type: 메모
 category: "업체연락처"
 title: "자동제어"
 source: notion_backup
+phone: "010-5502-8909"
 tags: [메모, 업체연락처]
 ---
 

@@ -3,6 +3,7 @@ type: 메모
 category: "업체연락처"
 title: "서초구청 건축과"
 source: notion_backup
+phone: "02-2155-6856"
 tags: [메모, 업체연락처]
 ---
 

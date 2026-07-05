@@ -1,0 +1,201 @@
+{
+  "main": {
+    "id": "0696dfdcbadc20c0",
+    "type": "split",
+    "children": [
+      {
+        "id": "a52796f2f3d79df1",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "be005d1dd559413f",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "시설일지/2026-06-05_지하2층 저수조실-2 _pqavcxx.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "2026-06-05_지하2층 저수조실-2 _pqavcxx"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "4de7e24e3afbb7f0",
+    "type": "split",
+    "children": [
+      {
+        "id": "bb006c10ff049d2e",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "11f06824a5bf429e",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "파일 탐색기"
+            }
+          },
+          {
+            "id": "dced2ee717468365",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "검색"
+            }
+          },
+          {
+            "id": "26c825f6e1623ca7",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "북마크"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "3aba01b1f7d6a084",
+    "type": "split",
+    "children": [
+      {
+        "id": "5e2950d0a7b697a2",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "dc3155ad0b38dcad",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "시설일지/2026-06-05_지하2층 저수조실-2 _pqavcxx.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "2026-06-05_지하2층 저수조실-2 _pqavcxx 의 백링크"
+            }
+          },
+          {
+            "id": "1d0999c15df17ed6",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "시설일지/2026-06-05_지하2층 저수조실-2 _pqavcxx.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "2026-06-05_지하2층 저수조실-2 _pqavcxx 의 나가는 링크"
+            }
+          },
+          {
+            "id": "56bdd779a1c2aef1",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "태그"
+            }
+          },
+          {
+            "id": "f31f40e856ef4d5a",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "모든 속성"
+            }
+          },
+          {
+            "id": "b8aba44243fc67b2",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "시설일지/2026-06-05_지하2층 저수조실-2 _pqavcxx.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "2026-06-05_지하2층 저수조실-2 _pqavcxx 의 개요"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:빠른 전환기 열기": false,
+      "graph:그래프 뷰 열기": false,
+      "canvas:새 캔버스 만들기": false,
+      "daily-notes:오늘의 일일 노트 열기": false,
+      "templates:템플릿 삽입": false,
+      "command-palette:명령어 팔레트 열기": false,
+      "bases:새 베이스 생성하기": false
+    }
+  },
+  "active": "be005d1dd559413f",
+  "lastOpenFiles": [
+    "시설일지/2026-06-08_지하2층 열교환실#1 열량계. 유량계_7bxmt4d.md",
+    "시설일지/2026-06-08_지하4층 수영장#2계계실 저수조_gdexpg2.md",
+    "시설일지/2026-06-08_지하4층 지열#3 골프장1.2.3.4._alounl7.md",
+    "메모/업체연락처/장한기술_n0nwh3z.md",
+    "메모/업체연락처/장한기술 (현장기사)_myokwtd.md",
+    "메모/업체연락처/수도사업소_7eidi24.md",
+    "메모/업체연락처/삼성헤스티아 (2)_yp4ha9p.md",
+    "메모/업체연락처/3공구_iqlh4im.md",
+    "메모/업체연락처/1공구_15ty34a.md",
+    "시설일지/2026-06-08_남여사우나스팀발생기_lzqmbpd.md",
+    "시설일지/2026-06-05_지하4층 저수조실-1 ㅇㅇ_gv8mt7c.md",
+    "시설일지/2026-06-05_지하2층 저수조실-2 _pqavcxx.md"
+  ]
+}

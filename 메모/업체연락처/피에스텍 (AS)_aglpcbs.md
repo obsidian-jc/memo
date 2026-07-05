@@ -3,6 +3,7 @@ type: 메모
 category: "업체연락처"
 title: "피에스텍 (AS)"
 source: notion_backup
+phone: "02-3408-1751"
 tags: [메모, 업체연락처]
 ---
 

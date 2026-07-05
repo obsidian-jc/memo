@@ -3,6 +3,7 @@ type: 메모
 category: "업체연락처"
 title: "삼성헤스티아 (2)"
 source: notion_backup
+phone: "010-4938-7471"
 tags: [메모, 업체연락처]
 ---
 

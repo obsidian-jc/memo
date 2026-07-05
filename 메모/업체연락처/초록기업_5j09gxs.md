@@ -3,6 +3,7 @@ type: 메모
 category: "업체연락처"
 title: "초록기업"
 source: notion_backup
+phone: "010-6353-2653"
 tags: [메모, 업체연락처]
 ---
 

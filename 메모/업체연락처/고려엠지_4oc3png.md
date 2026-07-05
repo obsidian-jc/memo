@@ -3,6 +3,7 @@ type: 메모
 category: "업체연락처"
 title: "고려엠지"
 source: notion_backup
+phone: "010-8744-7162"
 tags: [메모, 업체연락처]
 ---
 

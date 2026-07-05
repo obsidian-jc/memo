@@ -3,6 +3,7 @@ type: 메모
 category: "업체연락처"
 title: "법무법인 일신"
 source: notion_backup
+phone: "010-2756-7003"
 tags: [메모, 업체연락처]
 ---
 
