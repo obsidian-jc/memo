@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>시설일지 통합</title>
+<meta name="theme-color" content="#1F3864">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="시설일지">
+<style>
+:root{
+  --ink:#1F3864; --ink2:#2E5FA3;
+  --bg:#F4F6F8; --surface:#FFFFFF;
+  --line:#D5DCE4; --line2:#B0BEC5;
+  --ok:#2F6B4F; --ok-bg:#E3EFE8;
+  --warn:#C84E26; --warn-bg:#FBE9E2;
+  --caution:#B8841A; --caution-bg:#FBF0DA;
+  --sync:#5B8DEF; --sync-bg:#E7EEFC;
+  --radius:6px;
+  --shadow:0 1px 4px rgba(31,56,100,.10);
+  --safe-b:env(safe-area-inset-bottom);
+}
+*{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+body{font-family:'맑은 고딕',-apple-system,sans-serif; background:var(--bg); color:var(--ink); font-size:14px; min-height:100vh; padding-bottom:20px;}
+
+.header{background:var(--ink); color:#fff; padding:14px 20px; padding-top:calc(14px + env(safe-area-inset-top)); display:flex; align-items:center; gap:16px;}
+.header .t{font-size:17px; font-weight:700; letter-spacing:.5px;}
+.header .sub{font-size:11px; opacity:.65; margin-top:2px;}
+.header-right{margin-left:auto; display:flex; gap:8px; align-items:center;}
+
+.tabs{background:var(--surface); border-bottom:1px solid var(--line); display:flex; padding:0 12px; overflow-x:auto;}
+.tab{padding:12px 14px; cursor:pointer; font-size:13px; color:#7a8a9a; border-bottom:2px solid transparent; font-weight:600; white-space:nowrap;}
+.tab.active{color:var(--ink); border-bottom-color:var(--ink2);}
+
+.content{padding:16px; max-width:720px; margin:0 auto;}
+
+.card{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px; margin-bottom:12px;}
+
+.field{margin-bottom:12px;}
+label{display:block; font-size:12px; font-weight:600; color:#5B6E80; margin-bottom:4px;}
+input[type=text], input[type=date], input[type=url], textarea, select{
+  width:100%; padding:10px; border:1px solid var(--line2); border-radius:5px;
+  font-family:inherit; font-size:15px; color:var(--ink); background:#fff;
+}
+input:focus, textarea:focus, select:focus{outline:2px solid var(--ink2); outline-offset:1px;}
+textarea{resize:vertical;}
+.row{display:flex; gap:10px;}
+.row .field{flex:1;}
+
+.state-row{display:flex; gap:8px; margin-bottom:12px;}
+.state-btn{flex:1; padding:11px; text-align:center; border:2px solid var(--line2); border-radius:var(--radius); cursor:pointer; font-size:14px; font-weight:700; background:#fff;}
+.state-btn.sel-o{background:var(--ok-bg); border-color:var(--ok); color:var(--ok);}
+.state-btn.sel-t{background:var(--caution-bg); border-color:var(--caution); color:var(--caution);}
+.state-btn.sel-x{background:var(--warn-bg); border-color:var(--warn); color:var(--warn);}
+
+.btn{padding:10px 16px; border-radius:5px; border:1px solid var(--line2); background:#fff; color:var(--ink); font-family:inherit; font-size:13.5px; font-weight:600; cursor:pointer;}
+.btn:hover{background:#f0f2f4;}
+.btn-primary{background:var(--ink); color:#fff; border-color:var(--ink);}
+.btn-primary:hover{background:var(--ink2);}
+.btn-sm{padding:6px 10px; font-size:12px;}
+.btn-danger{color:var(--warn); border-color:var(--warn);}
+.btn-block{width:100%; padding:14px; font-size:15px; font-weight:700;}
+.btn:disabled{opacity:.5; cursor:not-allowed;}
+
+.preview{display:none; flex-direction:column; gap:6px; margin-bottom:12px;}
+.preview.show{display:flex;}
+.preview-label{font-size:11px; color:#7a8a9a; text-transform:uppercase; letter-spacing:.05em;}
+.pi{display:flex; align-items:flex-start; gap:8px; background:#fbfcfd; border:1px solid var(--line); border-left:3px solid var(--c,#888); border-radius:6px; padding:9px 11px;}
+.pi .emoji{font-size:16px; flex-shrink:0;}
+.pi .cat{font-size:11px; font-weight:700; color:var(--c,#888); margin-bottom:2px;}
+.pi .txt{font-size:13px; line-height:1.4;}
+
+.photos{display:flex; gap:8px; overflow-x:auto; padding:2px 0; margin-bottom:10px;}
+.photos:empty{display:none;}
+.thumb{position:relative; width:68px; height:68px; border-radius:8px; overflow:hidden; flex-shrink:0;}
+.thumb img{width:100%; height:100%; object-fit:cover;}
+.thumb .del{position:absolute; top:3px; right:3px; width:18px; height:18px; border-radius:50%; background:rgba(0,0,0,.65); border:none; color:#fff; font-size:11px; cursor:pointer;}
+.photo-add-btn{width:68px; height:68px; border-radius:8px; border:1.5px dashed var(--line2); background:none; color:#9aabb8; font-size:24px; cursor:pointer; flex-shrink:0;}
+input[type=file]{display:none;}
+
+.entry{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:12px 14px; margin-bottom:8px; cursor:pointer;}
+.entry-top{display:flex; justify-content:space-between; align-items:flex-start; gap:8px;}
+.entry-loc{font-weight:700; font-size:13.5px; color:var(--ink2);}
+.entry-date{font-size:11px; color:#9aabb8; margin-top:2px;}
+.entry-body{font-size:13.5px; margin-top:6px; white-space:pre-wrap; color:#2A3B45;}
+.stamp{display:inline-flex; align-items:center; padding:2px 8px; border-radius:3px; font-size:11px; font-weight:700; border:1.5px dashed currentColor;}
+.s-o{color:var(--ok); background:var(--ok-bg);}
+.s-t{color:var(--caution); background:var(--caution-bg);}
+.s-x{color:var(--warn); background:var(--warn-bg);}
+.sync-badge{display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; padding:2px 8px; border-radius:10px; margin-top:6px;}
+.sync-ok{color:var(--sync); background:var(--sync-bg);}
+.sync-fail{color:var(--warn); background:var(--warn-bg); cursor:pointer;}
+.sync-none{color:#9aabb8; background:#eef1f3;}
+
+.overlay{position:fixed; inset:0; background:rgba(31,56,100,.4); display:flex; align-items:center; justify-content:center; z-index:50; padding:20px;}
+.modal{background:#fff; border-radius:8px; width:100%; max-width:500px; max-height:90vh; overflow-y:auto; box-shadow:0 8px 32px rgba(0,0,0,.2);}
+.modal-head{padding:16px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;}
+.modal-head .t{font-size:15px; font-weight:700;}
+.modal-body{padding:18px 20px;}
+.modal-foot{padding:14px 20px; border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:8px; flex-wrap:wrap;}
+.close-x{background:none; border:none; font-size:20px; color:#aaa; cursor:pointer;}
+
+.toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(8px); background:var(--ink); color:#fff; padding:11px 18px; border-radius:22px; font-size:13.5px; box-shadow:var(--shadow); opacity:0; transition:all .25s; z-index:100; pointer-events:none; max-width:90vw; text-align:center;}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+.setting-row{padding:14px 0; border-bottom:1px solid var(--line);}
+.setting-row:last-child{border-bottom:none;}
+.setting-label{font-weight:600; font-size:13.5px; margin-bottom:6px;}
+.setting-desc{font-size:12px; color:#7a8a9a; margin-bottom:8px;}
+.folder-badge{font-size:12px; background:var(--ok-bg); color:var(--ok); padding:3px 10px; border-radius:4px; font-weight:600; display:inline-block;}
+.folder-none{font-size:12px; color:#aaa;}
+
+.filter-bar{display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;}
+.filter-chip{padding:5px 12px; border:1px solid var(--line2); border-radius:20px; font-size:12.5px; cursor:pointer; background:#fff;}
+.filter-chip.active{background:var(--ink); color:#fff; border-color:var(--ink);}
+
+.empty{text-align:center; padding:40px 20px; color:#9aabb8; font-size:13.5px; border:1px dashed var(--line2); border-radius:var(--radius);}
+.hint{font-size:11.5px; color:#8a99a8; margin-top:4px;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="t">🛠 시설일지 통합</div>
+    <div class="sub">노션 + 옵시디언 동시 저장</div>
+  </div>
+  <div class="header-right">
+    <button class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3);" onclick="showTab('settings')">⚙ 설정</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="write" onclick="showTab('write')">✏ 기록 입력</div>
+  <div class="tab" data-tab="history" onclick="showTab('history')">📋 이력 보기</div>
+  <div class="tab" data-tab="memo" onclick="showTab('memo')">📝 메모</div>
+  <div class="tab" data-tab="settings" onclick="showTab('settings')">⚙ 설정</div>
+</div>
+
+<!-- ══ 입력 탭 ══ -->
+<div id="tab-write" class="content">
+  <div id="write-folder-banner" style="display:none; background:var(--warn-bg); color:var(--warn); border:1px solid var(--warn); border-radius:6px; padding:10px 12px; font-size:12.5px; margin-bottom:12px;"></div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <div style="font-weight:700;font-size:14px;color:var(--ink2);" id="write-title-label">✏ 새 기록 작성</div>
+      <span id="cancel-edit-btn" style="display:none;font-size:12px;color:var(--warn);cursor:pointer;" onclick="cancelEdit()">✕ 편집 취소</span>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>날짜</label>
+        <input type="date" id="f-date">
+      </div>
+      <div class="field">
+        <label>담당자</label>
+        <input type="text" id="f-person" placeholder="이재천">
+      </div>
+    </div>
+    <div class="field">
+      <label>장소</label>
+      <input type="text" id="f-loc" placeholder="예: 열교환실#1, B4 펌프실" list="loc-list">
+      <datalist id="loc-list"></datalist>
+    </div>
+    <div class="field">
+      <label>상태</label>
+      <div class="state-row">
+        <div class="state-btn" id="btn-o" onclick="setStatus('○')">○ 정상</div>
+        <div class="state-btn" id="btn-t" onclick="setStatus('△')">△ 주의</div>
+        <div class="state-btn" id="btn-x" onclick="setStatus('×')">× 이상</div>
+      </div>
+    </div>
+    <div class="field">
+      <label>작업 내용 (자유롭게 쓰면 자동 분류됩니다)</label>
+      <textarea id="f-content" rows="4" placeholder="있었던 일을 자유롭게 적어주세요"></textarea>
+    </div>
+    <div class="field">
+      <label>메모 (나중에 참고할 것, 조치 방법 등)</label>
+      <textarea id="f-memo" rows="2" placeholder="예: 재발 시 인버터 리셋 후 업체 연락"></textarea>
+    </div>
+
+    <!-- 분류 미리보기 -->
+    <div class="preview" id="preview">
+      <div class="preview-label">노션 저장 시 분류 미리보기</div>
+      <div id="preview-items"></div>
+    </div>
+
+    <div class="field">
+      <label>사진</label>
+      <div class="photos" id="photos"></div>
+      <button class="btn btn-sm" id="btn-photo" type="button">📷 사진 추가</button>
+      <input type="file" id="file-in" multiple accept="image/*,video/*">
+    </div>
+
+    <div style="display:flex; gap:8px; margin-top:6px;">
+      <button class="btn" style="flex:1;" onclick="doPreview()">🔍 분류 확인</button>
+      <button class="btn btn-primary" style="flex:2;" id="save-entry-btn" onclick="saveEntry()">💾 저장 (로컬+노션)</button>
+    </div>
+    <div class="hint">저장을 누르면 먼저 옵시디언 폴더에 안전하게 기록되고, 그다음 노션 전송을 시도합니다. 노션이 실패해도 기록은 남습니다.</div>
+    <div id="save-status" style="margin-top:10px;display:none;"></div>
+  </div>
+</div>
+
+<!-- ══ 이력 탭 ══ -->
+<div id="tab-history" class="content" style="display:none;">
+  <div class="filter-bar">
+    <div class="filter-chip active" data-filter="all" onclick="setFilter('all')">전체</div>
+    <div class="filter-chip" data-filter="×" onclick="setFilter('×')">× 이상</div>
+    <div class="filter-chip" data-filter="△" onclick="setFilter('△')">△ 주의</div>
+    <div class="filter-chip" data-filter="○" onclick="setFilter('○')">○ 정상</div>
+    <div class="filter-chip" data-filter="unsynced" onclick="setFilter('unsynced')">⚠ 미전송</div>
+  </div>
+  <div style="display:flex; gap:8px; margin-bottom:14px;">
+    <input type="text" id="search-loc" placeholder="장소로 검색..." style="flex:1;" oninput="renderHistory()">
+  </div>
+  <div id="history-list"></div>
+</div>
+
+<!-- ══ 메모 탭 ══ -->
+<div id="tab-memo" class="content" style="display:none;">
+  <div class="card" style="margin-bottom:14px;">
+    <div class="row">
+      <div class="field">
+        <label>분류</label>
+        <div style="display:flex; gap:8px;">
+          <select id="memo-cat" style="flex:1;">
+            <option value="">선택</option>
+          </select>
+          <button class="btn btn-sm" onclick="addMemoCat()">+ 분류</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>날짜</label>
+        <input type="date" id="memo-date">
+      </div>
+    </div>
+    <div class="field">
+      <label>제목</label>
+      <input type="text" id="memo-title" placeholder="메모 제목">
+    </div>
+    <div class="field">
+      <label>전화번호 (업체연락처일 때 채우면 색인표에 자동으로 나옵니다)</label>
+      <input type="text" id="memo-phone" placeholder="010-1234-5678">
+    </div>
+    <div class="field">
+      <label>내용</label>
+      <textarea id="memo-content" rows="4" placeholder="자유롭게 메모하세요"></textarea>
+    </div>
+    <label style="display:flex;align-items:center;gap:6px;font-weight:500;font-size:12.5px;margin-bottom:10px;">
+      <input type="checkbox" id="memo-to-notion" style="width:auto;" checked> 노션 받은편지함에도 보내기
+    </label>
+    <button class="btn btn-primary btn-block" id="memo-save-btn" onclick="saveMemoEntry()">💾 메모 저장</button>
+    <div style="text-align:right;margin-top:6px;">
+      <span id="memo-cancel-edit" style="display:none;font-size:12px;color:var(--warn);cursor:pointer;" onclick="cancelMemoEdit()">✕ 편집 취소</span>
+    </div>
+  </div>
+
+  <div class="filter-bar" id="memo-filter-bar">
+    <div class="filter-chip active" data-mfilter="all" onclick="setMemoFilter('all')">전체</div>
+  </div>
+  <div id="memo-list"></div>
+</div>
+
+<!-- ══ 설정 탭 ══ -->
+<div id="tab-settings" class="content" style="display:none;">
+  <div class="card">
+    <div style="font-weight:700; font-size:15px; margin-bottom:6px;">📁 옵시디언 폴더</div>
+    <div class="setting-row">
+      <div class="setting-label">저장 위치</div>
+      <div class="setting-desc">한 번 선택하면 계속 이 폴더에 마크다운(.md) 파일로 저장됩니다. Obsidian에서 이 폴더를 vault로 열면 바로 보입니다.</div>
+      <div id="folder-label" class="folder-none">미선택</div>
+      <div style="margin-top:8px; display:flex; gap:6px;">
+        <button class="btn btn-sm" id="reconnect-btn" style="display:none;">🔄 재연결</button>
+        <button class="btn btn-sm" onclick="pickFolder()">폴더 선택</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="font-weight:700; font-size:15px; margin-bottom:6px;">📥 노션 연동</div>
+    <div class="setting-row">
+      <div class="field">
+        <label>Worker URL</label>
+        <input type="url" id="cfg-worker" placeholder="https://your-worker.workers.dev">
+      </div>
+      <div class="field">
+        <label>받은편지함 페이지 ID</label>
+        <input type="text" id="cfg-page" placeholder="38a69164a5ee81dd87b8ee0524c60eaf">
+      </div>
+      <button class="btn btn-primary" onclick="saveNotionCfg()">저장</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="font-weight:700; font-size:15px; margin-bottom:6px;">⬆ 기존 데이터 가져오기</div>
+    <div class="setting-desc">예전 앱에서 내보낸 sijil-data.json 파일을 가져오면, 옵시디언 폴더에 마크다운으로 일괄 변환됩니다. (노션에는 다시 보내지 않습니다)</div>
+    <input type="file" id="import-file" accept="application/json" onchange="importJSON(this.files[0])">
+  </div>
+</div>
+
+<!-- ══ 모달 ══ -->
+<div class="overlay" id="modal-overlay" style="display:none;" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-head">
+      <div class="t" id="modal-title"></div>
+      <button class="close-x" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-foot">
+      <button class="btn btn-sm" id="modal-retry-btn" style="display:none;">🔄 재전송</button>
+      <button class="btn btn-sm" id="modal-edit-btn">✎ 수정</button>
+      <button class="btn btn-danger btn-sm" id="modal-delete-btn">삭제</button>
+      <button class="btn btn-sm" onclick="closeModal()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// 분류 규칙 (자동분류 — 시설 데이터로 검증/개선됨)
+// ══════════════════════════════════════════════════════
+const CATS = [
+  { key:'todo', emoji:'✅', name:'할일', color:'#30D158',
+    kw:['해야할','해야 할','할일','할 일','todo','TODO','잊지말','잊지 말','챙겨야','기억해','체크리스트','확인해야','빼먹','까먹','미리 해','해놔야','해둬야','준비해야'] },
+  { key:'task', emoji:'📋', name:'업무관리', color:'#34C759',
+    kw:['방문예정','방문 예정','일정','예정','협조','협조문','요청','점검 예정','점검예정','내일','모레','다음주','이번주','오늘 오후','오늘 오전','회의','미팅','공지','신청','접수','제출','보고','결재','승인','처리','확인 부탁','부탁드립니다','정기'] },
+  { key:'contact', emoji:'📞', name:'연락처·업체', color:'#FF9F0A',
+    kw:['전화번호','전화 번호','010-','011-','016-','017-','018-','019-','휴대폰','연락처','담당자','업체','차량번호','차량 번호','이메일','@','팩스','대표','사장','기사','직통','내선','문자','톡','카톡'] },
+  { key:'history', emoji:'🛠', name:'이력·설비', color:'#FF6B6B',
+    kw:['고장','수리','점검','교체','이력','설비','부품','누수','누전','소음','이상','펌프','보일러','엘리베이터','전기','가스','배관','밸브','필터','청소','세척','완료','수선','파손','교체완료','수리완료','A/S','as','애프터','하자','조치','불량','임펠라','절연','차단기'] },
+  { key:'docs', emoji:'📁', name:'자료', color:'#BF5AF2',
+    kw:['도면','매뉴얼','설명서','사진','자료','인수인계','인계','문서','계약서','견적서','보고서','첨부','파일','pdf','엑셀','저장','백업','카탈로그','스펙'] },
+  { key:'inbox', emoji:'📥', name:'받은편지함', color:'#5B8DEF', kw:[] }
+];
+const MEMO_CAT_EMOJI = {'업체연락처':'📞','참고사항':'📁','점검주기':'🛠','수리이력':'🛠','기타':'📥'};
+
+// 문장 단위로 분리 후 분류. 키워드 매칭 안 되는 짧은 후속 문장은
+// 직전 분류를 이어받는다 (목록 세부내역, 이름/추천 코멘트 등이 따로 떨어지는 문제 방지)
+function classify(text){
+  const sentences = text.split(/[,\n.·]+/).map(s=>s.trim()).filter(s=>s.length>1);
+  const catMap = {};
+  let lastCat = null;
+  sentences.forEach(s=>{
+    let matched = null, maxScore = 0;
+    for(const cat of CATS){
+      if(cat.key==='inbox') continue;
+      let score = 0;
+      for(const kw of cat.kw) if(s.includes(kw)) score += kw.length;
+      if(score > maxScore){ maxScore = score; matched = cat; }
+    }
+    if(/\d{2,3}-\d{3,4}-\d{4}/.test(s) || /01\d{8,9}/.test(s.replace(/-/g,''))) matched = CATS.find(c=>c.key==='contact');
+    if(!matched && lastCat && s.length <= 15) matched = lastCat;
+    const cat = matched || CATS.find(c=>c.key==='inbox');
+    lastCat = cat;
+    if(!catMap[cat.key]) catMap[cat.key] = {...cat, texts:[]};
+    catMap[cat.key].texts.push(s);
+  });
+  if(Object.keys(catMap).length===0){
+    const inbox = CATS.find(c=>c.key==='inbox');
+    catMap['inbox'] = {...inbox, texts:[text.trim()]};
+  }
+  return Object.values(catMap);
+}
+
+// ══════════════════════════════════════════════════════
+// 상태 / 데이터
+// ══════════════════════════════════════════════════════
+let DATA = JSON.parse(localStorage.getItem('sijil-merged') || '{"entries":[],"memos":[],"memoCats":["업체연락처","참고사항","점검주기","수리이력","기타"]}');
+if(!DATA.entries) DATA.entries=[];
+if(!DATA.memos) DATA.memos=[];
+if(!DATA.memoCats) DATA.memoCats=['업체연락처','참고사항','점검주기','수리이력','기타'];
+
+let dirHandle = null;
+let selStatus = '';
+let filterStatus = 'all';
+let editingEntryId = null;
+let editingMemoId = null;
+let memoFilter = 'all';
+let pendingFiles = [];
+let lastClassified = null;
+
+let cfg = { workerUrl: localStorage.getItem('fc-worker')||'', pageId: localStorage.getItem('fc-page')||'' };
+
+function pad(n){ return n<10?'0'+n:''+n; }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function esc(s){ return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function safeName(s){ return String(s||'').replace(/[\\/:*?"<>|]/g,'-').trim(); }
+
+// ══════════════════════════════════════════════════════
+// 폴더 핸들 저장 (IndexedDB) — 새로고침 후에도 유지
+// ══════════════════════════════════════════════════════
+function idbOpen(){
+  return new Promise((resolve, reject)=>{
+    const req = indexedDB.open('sijilmerged-fsdb', 1);
+    req.onupgradeneeded = ()=> req.result.createObjectStore('handles');
+    req.onsuccess = ()=> resolve(req.result);
+    req.onerror = ()=> reject(req.error);
+  });
+}
+async function idbSetHandle(handle){
+  const db = await idbOpen();
+  return new Promise((resolve, reject)=>{
+    const tx = db.transaction('handles','readwrite');
+    tx.objectStore('handles').put(handle, 'dirHandle');
+    tx.oncomplete = ()=> resolve();
+    tx.onerror = ()=> reject(tx.error);
+  });
+}
+async function idbGetHandle(){
+  const db = await idbOpen();
+  return new Promise((resolve, reject)=>{
+    const tx = db.transaction('handles','readonly');
+    const req = tx.objectStore('handles').get('dirHandle');
+    req.onsuccess = ()=> resolve(req.result || null);
+    req.onerror = ()=> reject(req.error);
+  });
+}
+async function tryRestoreFolder(){
+  let saved;
+  try{ saved = await idbGetHandle(); } catch(_){ return; }
+  if(!saved) return;
+  let perm;
+  try{ perm = await saved.queryPermission({mode:'readwrite'}); } catch(_){ return; }
+  if(perm === 'granted'){
+    dirHandle = saved;
+    setFolderUI(dirHandle.name, true);
+    const loaded = await loadDataFromFolder();
+    if(loaded){ loadLocDatalist(); renderHistory(); }
+  } else {
+    setFolderUI(saved.name, false, saved);
+  }
+}
+function setFolderUI(name, connected, pendingHandle){
+  const label = document.getElementById('folder-label');
+  const reconnectBtn = document.getElementById('reconnect-btn');
+  if(connected){
+    label.textContent = '✅ ' + name;
+    label.className = 'folder-badge';
+    reconnectBtn.style.display = 'none';
+  } else if(name){
+    label.textContent = '⚠ ' + name + ' (권한 재승인 필요)';
+    label.className = 'folder-none';
+    reconnectBtn.style.display = 'inline-block';
+    reconnectBtn.onclick = async ()=>{
+      try{
+        const perm = await pendingHandle.requestPermission({mode:'readwrite'});
+        if(perm === 'granted'){
+          dirHandle = pendingHandle;
+          setFolderUI(dirHandle.name, true);
+          const loaded = await loadDataFromFolder();
+          if(loaded){ loadLocDatalist(); renderHistory(); }
+          toast('✅ 재연결 완료: ' + dirHandle.name);
+          updateWriteTabFolderBanner();
+        } else { toast('권한이 거부되었습니다'); }
+      } catch(e){ toast('재연결 실패: ' + e.message); }
+    };
+  } else {
+    label.textContent = '미선택';
+    label.className = 'folder-none';
+    reconnectBtn.style.display = 'none';
+  }
+}
+async function pickFolder(){
+  if(!window.showDirectoryPicker){
+    toast('❌ 이 브라우저/환경에서는 폴더 선택 기능을 쓸 수 없습니다 (서버 주소로 열어야 함, file://로 직접 열면 안 됨)');
+    return;
+  }
+  try{
+    dirHandle = await window.showDirectoryPicker();
+    setFolderUI(dirHandle.name, true);
+    try{ await idbSetHandle(dirHandle); } catch(_){}
+    const loaded = await loadDataFromFolder();
+    if(loaded){
+      toast('✅ 기존 데이터 불러옴: ' + dirHandle.name);
+      loadLocDatalist(); renderHistory();
+    } else {
+      await saveDataJSON();
+      toast('✅ 폴더 연결 완료: ' + dirHandle.name);
+    }
+    updateWriteTabFolderBanner();
+  } catch(e){
+    if(e.name === 'AbortError') return; // 사용자가 취소한 경우 - 정상
+    toast('❌ 폴더 선택 실패: ' + e.name + ' — ' + e.message);
+    console.error('pickFolder error', e);
+  }
+}
+
+// 기록 입력 화면 상단에 폴더 연결 상태를 항상 보이게 표시
+// (설정 탭까지 안 가도 저장 전에 바로 알 수 있도록)
+function updateWriteTabFolderBanner(){
+  const el = document.getElementById('write-folder-banner');
+  if(!el) return;
+  if(dirHandle){
+    el.style.display = 'none';
+  } else {
+    el.style.display = 'block';
+    el.innerHTML = '⚠ 옵시디언 폴더가 연결되어 있지 않습니다. 이 상태로 저장하면 <b>노션에만</b> 들어가고 로컬엔 저장되지 않습니다. <a href="#" onclick="showTab(\'settings\');return false;" style="color:inherit;text-decoration:underline;">설정에서 연결하기</a>';
+  }
+}
+async function saveDataJSON(){
+  if(!dirHandle) return;
+  const fh = await dirHandle.getFileHandle('sijil-data.json', {create:true});
+  const writable = await fh.createWritable();
+  await writable.write(JSON.stringify(DATA, null, 2));
+  await writable.close();
+}
+async function loadDataFromFolder(){
+  try{
+    const fh = await dirHandle.getFileHandle('sijil-data.json');
+    const file = await fh.getFile();
+    const parsed = JSON.parse(await file.text());
+    DATA = Object.assign({entries:[], memos:[], memoCats:DATA.memoCats}, parsed);
+    localStorage.setItem('sijil-merged', JSON.stringify(DATA));
+    return true;
+  } catch(e){ return false; }
+}
+function save(){
+  localStorage.setItem('sijil-merged', JSON.stringify(DATA));
+  if(dirHandle) saveDataJSON().catch(()=>{});
+}
+function saveNotionCfg(){
+  cfg.workerUrl = document.getElementById('cfg-worker').value.trim();
+  cfg.pageId = document.getElementById('cfg-page').value.trim();
+  localStorage.setItem('fc-worker', cfg.workerUrl);
+  localStorage.setItem('fc-page', cfg.pageId);
+  toast('노션 설정이 저장됐습니다');
+}
+
+// ══════════════════════════════════════════════════════
+// 초기화 / 탭
+// ══════════════════════════════════════════════════════
+window.onload = function(){
+  document.getElementById('f-date').value = todayStr();
+  document.getElementById('memo-date').value = todayStr();
+  document.getElementById('cfg-worker').value = cfg.workerUrl;
+  document.getElementById('cfg-page').value = cfg.pageId;
+  document.getElementById('btn-photo').addEventListener('click', ()=>document.getElementById('file-in').click());
+  document.getElementById('file-in').addEventListener('change', (e)=>{
+    Array.from(e.target.files).forEach(addFile); e.target.value='';
+  });
+  loadLocDatalist();
+  renderHistory();
+  tryRestoreFolder().then(updateWriteTabFolderBanner);
+};
+function showTab(t){
+  ['write','history','memo','settings'].forEach(id=>{
+    document.getElementById('tab-'+id).style.display = id===t?'block':'none';
+  });
+  document.querySelectorAll('[data-tab]').forEach(el=> el.classList.toggle('active', el.dataset.tab===t));
+  if(t==='history') renderHistory();
+  if(t==='memo'){ loadMemoCatSelect(); renderMemoList(); }
+}
+function setStatus(s){
+  selStatus = s;
+  document.getElementById('btn-o').className = 'state-btn'+(s==='○'?' sel-o':'');
+  document.getElementById('btn-t').className = 'state-btn'+(s==='△'?' sel-t':'');
+  document.getElementById('btn-x').className = 'state-btn'+(s==='×'?' sel-x':'');
+}
+function loadLocDatalist(){
+  const locs = [...new Set(DATA.entries.map(e=>e.loc).filter(Boolean))];
+  document.getElementById('loc-list').innerHTML = locs.map(l=>`<option value="${esc(l)}">`).join('');
+}
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 2800);
+}
+
+// ══════════════════════════════════════════════════════
+// 사진 (촬영/첨부 → 압축 → 로컬저장 + 노션업로드용)
+// ══════════════════════════════════════════════════════
+async function compressImage(file, maxDim=1600, quality=0.75){
+  const bitmap = await createImageBitmap(file);
+  let { width, height } = bitmap;
+  if(Math.max(width,height) > maxDim){
+    const scale = maxDim / Math.max(width,height);
+    width = Math.round(width*scale); height = Math.round(height*scale);
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width=width; canvas.height=height;
+  canvas.getContext('2d').drawImage(bitmap,0,0,width,height);
+  const blob = await new Promise(res=>canvas.toBlob(res,'image/jpeg',quality));
+  const base = (file.name||'photo').replace(/\.[^.]+$/,'');
+  return new File([blob], base+'.jpg', {type:'image/jpeg'});
+}
+async function addFile(file){
+  const idx = pendingFiles.length;
+  pendingFiles.push(file);
+  const wrap = document.createElement('div'); wrap.className='thumb';
+  const img = document.createElement('img');
+  const del = document.createElement('button'); del.className='del'; del.textContent='×';
+  del.onclick = ()=>{ pendingFiles[idx]=null; wrap.remove(); };
+  wrap.append(img, del);
+  document.getElementById('photos').append(wrap);
+  if(file.type && file.type.startsWith('image/')){
+    try{
+      const compressed = await compressImage(file);
+      if(pendingFiles[idx] !== null){ pendingFiles[idx] = compressed; img.src = URL.createObjectURL(compressed); }
+    } catch(e){ img.src = URL.createObjectURL(file); }
+  } else { img.src = URL.createObjectURL(file); }
+}
+function clearPhotoUI(){
+  pendingFiles = [];
+  document.getElementById('photos').innerHTML = '';
+}
+
+// ══════════════════════════════════════════════════════
+// 분류 미리보기
+// ══════════════════════════════════════════════════════
+function doPreview(){
+  const txt = document.getElementById('f-content').value.trim();
+  if(!txt){ toast('작업 내용을 먼저 입력해주세요'); return; }
+  lastClassified = classify(txt);
+  renderPreview();
+}
+function renderPreview(){
+  const box = document.getElementById('preview-items');
+  box.innerHTML = lastClassified.map(c=>`
+    <div class="pi" style="--c:${c.color}">
+      <span class="emoji">${c.emoji}</span>
+      <div>
+        <div class="cat">${c.name}</div>
+        <div class="txt">${c.texts.map(esc).join('<br>')}</div>
+      </div>
+    </div>`).join('');
+  document.getElementById('preview').classList.add('show');
+}
+
+// ══════════════════════════════════════════════════════
+// 옵시디언 마크다운 생성/저장
+// ══════════════════════════════════════════════════════
+function statusTag(s){ return s==='○'?'정상':s==='△'?'주의':s==='×'?'이상':''; }
+
+function buildEntryMD(e){
+  let md = '---\n';
+  md += `type: 시설일지\n`;
+  md += `date: ${e.date||''}\n`;
+  md += `location: "${(e.loc||'').replace(/"/g,'\\"')}"\n`;
+  md += `status: "${e.status||''}"\n`;
+  md += `person: "${(e.person||'').replace(/"/g,'\\"')}"\n`;
+  md += `notion_synced: ${!!e._notionSynced}\n`;
+  md += `id: ${e.id}\n`;
+  md += `tags: [시설일지${statusTag(e.status)? ', '+statusTag(e.status):''}]\n`;
+  md += '---\n\n';
+  md += `# ${e.loc||'(장소 없음)'} ${e.status?e.status:''}\n\n`;
+  md += `- 날짜: ${e.date||''}\n`;
+  if(e.person) md += `- 담당자: ${e.person}\n`;
+  md += `\n## 내용\n${e.content||''}\n`;
+  if(e.memo) md += `\n> **메모**: ${e.memo}\n`;
+  if(e.photoNames && e.photoNames.length){
+    md += `\n## 사진\n` + e.photoNames.map(n=>`![[photos/${n}]]`).join('\n') + '\n';
+  }
+  if(e.photoLinks && e.photoLinks.length){
+    md += `\n## 첨부 링크\n` + e.photoLinks.map((p,i)=>`- [사진${e.photoLinks.length>1?i+1:''}](${p})`).join('\n') + '\n';
+  }
+  if(e._notionError) md += `\n> ⚠ 노션 전송 실패: ${e._notionError}\n`;
+  return md;
+}
+async function saveEntryMD(e){
+  if(!dirHandle) return;
+  const dir = await dirHandle.getDirectoryHandle('시설일지', {create:true});
+  const fname = `${e.date||'날짜없음'}_${safeName(e.loc).slice(0,30)}_${e.id}.md`;
+  const fh = await dir.getFileHandle(fname, {create:true});
+  const writable = await fh.createWritable();
+  await writable.write(buildEntryMD(e));
+  await writable.close();
+}
+async function savePhotosLocal(entryId, files){
+  if(!dirHandle || !files.length) return [];
+  const dir = await dirHandle.getDirectoryHandle('시설일지', {create:true});
+  const photoDir = await dir.getDirectoryHandle('photos', {create:true});
+  const names = [];
+  let i = 1;
+  for(const f of files){
+    if(!f) continue;
+    const name = `${entryId}_${i}.jpg`;
+    const fh = await photoDir.getFileHandle(name, {create:true});
+    const writable = await fh.createWritable();
+    await writable.write(f);
+    await writable.close();
+    names.push(name);
+    i++;
+  }
+  return names;
+}
+function buildMemoMD(m){
+  let md = '---\n';
+  md += `type: 메모\ncategory: "${(m.cat||'').replace(/"/g,'\\"')}"\ndate: ${m.date||''}\ntitle: "${(m.title||'').replace(/"/g,'\\"')}"\n`;
+  if(m.phone) md += `phone: "${m.phone.replace(/"/g,'\\"')}"\n`;
+  md += `id: ${m.id}\ntags: [메모, "${m.cat||''}"]\n`;
+  md += '---\n\n';
+  md += `# ${m.title||m.cat}\n\n`;
+  if(m.phone) md += `- 연락처: ${m.phone}\n`;
+  md += `${m.content||''}\n`;
+  return md;
+}
+async function saveMemoMD(m){
+  if(!dirHandle) return;
+  const memoDir = await dirHandle.getDirectoryHandle('메모', {create:true});
+  const catDir = await memoDir.getDirectoryHandle(safeName(m.cat), {create:true});
+  const fname = `${m.date||'날짜없음'}_${safeName(m.title||'메모').slice(0,30)}_${m.id}.md`;
+  const fh = await catDir.getFileHandle(fname, {create:true});
+  const writable = await fh.createWritable();
+  await writable.write(buildMemoMD(m));
+  await writable.close();
+}
+
+// ══════════════════════════════════════════════════════
+// 노션 동기화
+// ══════════════════════════════════════════════════════
+async function postNotionLine(text){
+  const res = await fetch(cfg.workerUrl.replace(/\/$/,'')+'/notion-inbox', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({pageId: cfg.pageId, text})
+  });
+  if(!res.ok) throw new Error('전송 실패 ('+res.status+')');
+}
+async function postNotionPhoto(file, caption){
+  const fd = new FormData();
+  fd.append('pageId', cfg.pageId); fd.append('caption', caption); fd.append('file', file, file.name);
+  const res = await fetch(cfg.workerUrl.replace(/\/$/,'')+'/notion-photo', {method:'POST', body:fd});
+  if(!res.ok){
+    let detail=''; try{ detail=(await res.json()).error||''; }catch(_){}
+    throw new Error('사진 업로드 실패 ('+res.status+')'+(detail?': '+detail:''));
+  }
+}
+async function syncEntryToNotion(entry, files){
+  if(!cfg.workerUrl || !cfg.pageId) return {ok:false, error:'노션 설정이 없습니다 (설정 탭)'};
+  const now = new Date();
+  const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const groups = classify(entry.content || '(내용 없음)');
+  const locTag = entry.loc ? `[${entry.loc}${entry.status?' '+entry.status:''}] ` : '';
+  try{
+    for(const g of groups){
+      const header = `${g.emoji} [${g.name}] ${entry.date||todayStr()} ${timeStr}`;
+      const body = locTag + g.texts.join(' / ');
+      await postNotionLine(`${header} — ${body}`);
+    }
+    if(entry.memo){
+      await postNotionLine(`📝 [메모] ${entry.date||todayStr()} ${timeStr} — ${locTag}${entry.memo}`);
+    }
+    if(files && files.length){
+      const caption = (entry.loc||'') + ' ' + (entry.content||'').slice(0,50);
+      for(const f of files){ if(f) await postNotionPhoto(f, caption); }
+    }
+    return {ok:true};
+  } catch(e){ return {ok:false, error:e.message}; }
+}
+async function syncMemoToNotion(m){
+  if(!cfg.workerUrl || !cfg.pageId) return {ok:false, error:'노션 설정이 없습니다 (설정 탭)'};
+  const now = new Date();
+  const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const emoji = MEMO_CAT_EMOJI[m.cat] || '📝';
+  try{
+    await postNotionLine(`${emoji} [${m.cat}] ${m.date||todayStr()} ${timeStr} — ${m.title?m.title+': ':''}${m.content}`);
+    return {ok:true};
+  } catch(e){ return {ok:false, error:e.message}; }
+}
+
+// ══════════════════════════════════════════════════════
+// 기록 저장 (핵심: 로컬 먼저 → 노션 시도)
+// ══════════════════════════════════════════════════════
+async function saveEntry(){
+  const date = document.getElementById('f-date').value;
+  const person = document.getElementById('f-person').value.trim();
+  const loc = document.getElementById('f-loc').value.trim();
+  const content = document.getElementById('f-content').value.trim();
+  const memo = document.getElementById('f-memo').value.trim();
+
+  if(!loc){ toast('장소를 입력해주세요'); return; }
+  if(!content){ toast('작업 내용을 입력해주세요'); return; }
+
+  const statusEl = document.getElementById('save-status');
+  statusEl.style.display = 'block';
+  statusEl.innerHTML = '<span style="color:#888;">저장 중...</span>';
+  document.getElementById('save-entry-btn').disabled = true;
+
+  const files = pendingFiles.filter(Boolean);
+  let entry;
+  const isEdit = !!editingEntryId;
+
+  if(isEdit){
+    const idx = DATA.entries.findIndex(x=>x.id===editingEntryId);
+    if(idx===-1){ toast('수정할 기록을 찾을 수 없습니다'); cancelEdit(); return; }
+    entry = Object.assign({}, DATA.entries[idx], {date, person, loc, status:selStatus, content, memo, _edited:new Date().toISOString()});
+    DATA.entries[idx] = entry;
+  } else {
+    entry = {id:uid(), date, person, loc, status:selStatus, content, memo, photoNames:[], photoLinks:[], _notionSynced:false, _notionError:'', _t:new Date().toISOString()};
+    DATA.entries.unshift(entry);
+  }
+
+  // 1) 로컬 우선 저장
+  save();
+  loadLocDatalist();
+  let results = [];
+  try{
+    if(dirHandle){
+      const names = await savePhotosLocal(entry.id, files);
+      if(names.length) entry.photoNames = (entry.photoNames||[]).concat(names);
+      await saveEntryMD(entry);
+      results.push('✅ 옵시디언 폴더에 저장 완료');
+    } else {
+      results.push('⚠ 옵시디언 폴더가 지정되지 않았습니다 (설정에서 선택)');
+    }
+  } catch(e){ results.push('❌ 로컬 저장 실패: '+e.message); }
+
+  // 2) 노션 전송 시도
+  statusEl.innerHTML = results.map(r=>`<div>${r}</div>`).join('') + '<div style="color:#888;">노션 전송 중...</div>';
+  const syncRes = await syncEntryToNotion(entry, files);
+  entry._notionSynced = syncRes.ok;
+  entry._notionError = syncRes.ok ? '' : syncRes.error;
+  save();
+  if(dirHandle){ try{ await saveEntryMD(entry); } catch(_){} }
+
+  results.push(syncRes.ok ? '✅ 노션 전송 완료' : ('⚠ 노션 전송 실패 (로컬엔 안전하게 저장됨): '+syncRes.error));
+  statusEl.innerHTML = results.map(r=>`<div style="padding:2px 0;">${r}</div>`).join('');
+  document.getElementById('save-entry-btn').disabled = false;
+
+  if(!isEdit){
+    document.getElementById('f-loc').value=''; document.getElementById('f-content').value='';
+    document.getElementById('f-memo').value=''; setStatus('');
+    clearPhotoUI();
+    document.getElementById('preview').classList.remove('show');
+    lastClassified = null;
+  } else {
+    cancelEdit();
+  }
+  setTimeout(()=>{ statusEl.style.display='none'; }, 5000);
+  renderHistory();
+}
+
+async function retryEntrySync(id){
+  const e = DATA.entries.find(x=>x.id===id);
+  if(!e) return;
+  toast('재전송 중...');
+  const syncRes = await syncEntryToNotion(e, []);
+  e._notionSynced = syncRes.ok; e._notionError = syncRes.ok?'':syncRes.error;
+  save();
+  if(dirHandle){ try{ await saveEntryMD(e); } catch(_){} }
+  toast(syncRes.ok ? '✅ 재전송 성공' : '❌ 재전송 실패: '+syncRes.error);
+  renderHistory();
+  closeModal();
+}
+
+function editEntry(id){
+  const e = DATA.entries.find(x=>x.id===id);
+  if(!e) return;
+  editingEntryId = id;
+  document.getElementById('f-date').value = e.date || todayStr();
+  document.getElementById('f-person').value = e.person || '';
+  document.getElementById('f-loc').value = e.loc || '';
+  document.getElementById('f-content').value = e.content || '';
+  document.getElementById('f-memo').value = e.memo || '';
+  setStatus(e.status || '');
+  document.getElementById('write-title-label').textContent = '✎ 기록 수정 중';
+  document.getElementById('cancel-edit-btn').style.display = 'inline';
+  document.getElementById('save-entry-btn').textContent = '💾 수정 완료 (로컬+노션)';
+  closeModal();
+  showTab('write');
+}
+function cancelEdit(){
+  editingEntryId = null;
+  document.getElementById('write-title-label').textContent = '✏ 새 기록 작성';
+  document.getElementById('cancel-edit-btn').style.display = 'none';
+  document.getElementById('save-entry-btn').textContent = '💾 저장 (로컬+노션)';
+  document.getElementById('f-loc').value=''; document.getElementById('f-content').value='';
+  document.getElementById('f-memo').value=''; document.getElementById('f-person').value='';
+  document.getElementById('f-date').value = todayStr();
+  setStatus('');
+  clearPhotoUI();
+  document.getElementById('preview').classList.remove('show');
+}
+function deleteEntry(id){
+  if(!confirm('이 기록을 삭제할까요? (옵시디언 폴더의 md 파일은 남아있습니다)')) return;
+  DATA.entries = DATA.entries.filter(e=>e.id!==id);
+  save(); closeModal(); renderHistory();
+  toast('삭제되었습니다');
+}
+
+// ══════════════════════════════════════════════════════
+// 이력 렌더
+// ══════════════════════════════════════════════════════
+function setFilter(f){
+  filterStatus = f;
+  document.querySelectorAll('.filter-chip[data-filter]').forEach(el=> el.classList.toggle('active', el.dataset.filter===f));
+  renderHistory();
+}
+function renderHistory(){
+  const search = (document.getElementById('search-loc')||{}).value || '';
+  let entries = DATA.entries;
+  if(filterStatus === 'unsynced') entries = entries.filter(e=>!e._notionSynced);
+  else if(filterStatus !== 'all') entries = entries.filter(e=>e.status===filterStatus);
+  if(search) entries = entries.filter(e=>(e.loc||'').includes(search));
+
+  const el = document.getElementById('history-list');
+  if(!el) return;
+  if(entries.length===0){ el.innerHTML = '<div class="empty">기록이 없습니다.</div>'; return; }
+  el.innerHTML = entries.map(e=>{
+    const sc = e.status==='○'?'s-o': e.status==='△'?'s-t': e.status==='×'?'s-x':'';
+    const syncBadge = e._imported
+      ? `<span class="sync-badge sync-none">📦 가져온 기록</span>`
+      : e._notionSynced
+        ? `<span class="sync-badge sync-ok">✅ 노션 동기화됨</span>`
+        : `<span class="sync-badge sync-fail" onclick="event.stopPropagation();retryEntrySync('${e.id}')">⚠ 미전송 · 재전송</span>`;
+    return `<div class="entry" onclick="openEntry('${e.id}')">
+      <div class="entry-top">
+        <div>
+          <span class="entry-loc">${esc(e.loc)}</span>
+          ${e.status?`<span class="stamp ${sc}" style="margin-left:8px;">${esc(e.status)}</span>`:''}
+        </div>
+        <div class="entry-date">${e.date}${e.person?' · '+esc(e.person):''}</div>
+      </div>
+      <div class="entry-body">${esc(e.content.length>80?e.content.slice(0,80)+'…':e.content)}</div>
+      <div>${syncBadge}</div>
+    </div>`;
+  }).join('');
+}
+function openEntry(id){
+  const e = DATA.entries.find(x=>x.id===id);
+  if(!e) return;
+  const sc = e.status==='○'?'s-o': e.status==='△'?'s-t': e.status==='×'?'s-x':'';
+  document.getElementById('modal-title').innerHTML = `${esc(e.loc)} ${e.status?`<span class="stamp ${sc}">${esc(e.status)}</span>`:''}`;
+  document.getElementById('modal-body').innerHTML = `
+    <div style="font-size:12px;color:#9aabb8;margin-bottom:10px;">${e.date}${e.person?' · '+esc(e.person):''}</div>
+    <div style="white-space:pre-wrap;font-size:13.5px;">${esc(e.content)}</div>
+    ${e.memo?`<div style="margin-top:10px;padding:10px;background:#f4f6f8;border-radius:5px;font-size:13px;"><b>메모</b><br>${esc(e.memo)}</div>`:''}
+    ${e._notionError?`<div style="margin-top:10px;color:var(--warn);font-size:12px;">⚠ 마지막 노션 오류: ${esc(e._notionError)}</div>`:''}
+  `;
+  document.getElementById('modal-edit-btn').onclick = ()=>editEntry(id);
+  document.getElementById('modal-delete-btn').onclick = ()=>deleteEntry(id);
+  const retryBtn = document.getElementById('modal-retry-btn');
+  if(!e._notionSynced && !e._imported){ retryBtn.style.display='inline-block'; retryBtn.onclick=()=>retryEntrySync(id); }
+  else retryBtn.style.display='none';
+  document.getElementById('modal-overlay').style.display = 'flex';
+}
+function closeModal(ev){
+  if(!ev || ev.target===document.getElementById('modal-overlay')) document.getElementById('modal-overlay').style.display = 'none';
+}
+
+// ══════════════════════════════════════════════════════
+// 메모
+// ══════════════════════════════════════════════════════
+function loadMemoCatSelect(){
+  const sel = document.getElementById('memo-cat');
+  sel.innerHTML = '<option value="">분류 선택</option>' + DATA.memoCats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  const bar = document.getElementById('memo-filter-bar');
+  bar.innerHTML = `<div class="filter-chip ${memoFilter==='all'?'active':''}" onclick="setMemoFilter('all')">전체</div>` +
+    DATA.memoCats.map(c=>`<div class="filter-chip ${memoFilter===c?'active':''}" onclick="setMemoFilter('${esc(c)}')">${esc(c)}</div>`).join('');
+}
+function addMemoCat(){
+  const name = prompt('새 분류 이름을 입력하세요');
+  if(!name || !name.trim()) return;
+  const n = name.trim();
+  if(DATA.memoCats.includes(n)){ toast('이미 있는 분류입니다'); return; }
+  DATA.memoCats.push(n); save(); loadMemoCatSelect(); renderMemoList();
+  toast('분류가 추가됐습니다: '+n);
+}
+function setMemoFilter(f){ memoFilter = f; loadMemoCatSelect(); renderMemoList(); }
+
+async function saveMemoEntry(){
+  const cat = document.getElementById('memo-cat').value;
+  const date = document.getElementById('memo-date').value;
+  const title = document.getElementById('memo-title').value.trim();
+  const phone = document.getElementById('memo-phone').value.trim();
+  const content = document.getElementById('memo-content').value.trim();
+  const toNotion = document.getElementById('memo-to-notion').checked;
+  if(!cat){ toast('분류를 선택해주세요'); return; }
+  if(!content){ toast('내용을 입력해주세요'); return; }
+
+  let entry;
+  const isEdit = !!editingMemoId;
+  if(isEdit){
+    const idx = DATA.memos.findIndex(x=>x.id===editingMemoId);
+    if(idx===-1){ toast('수정할 메모를 찾을 수 없습니다'); cancelMemoEdit(); return; }
+    entry = Object.assign({}, DATA.memos[idx], {cat, date, title, phone, content, _edited:new Date().toISOString()});
+    DATA.memos[idx] = entry;
+  } else {
+    entry = {id:uid(), cat, date, title, phone, content, _notionSynced:false, _notionError:'', _t:new Date().toISOString()};
+    DATA.memos.unshift(entry);
+  }
+  save();
+  document.getElementById('memo-title').value=''; document.getElementById('memo-phone').value=''; document.getElementById('memo-content').value='';
+  renderMemoList();
+
+  let msgs = [];
+  try{
+    if(dirHandle){ await saveMemoMD(entry); msgs.push('✅ 옵시디언 저장 완료'); }
+    else msgs.push('⚠ 옵시디언 폴더 미지정');
+  } catch(e){ msgs.push('❌ 로컬 저장 실패: '+e.message); }
+
+  if(toNotion){
+    const r = await syncMemoToNotion(entry);
+    entry._notionSynced = r.ok; entry._notionError = r.ok?'':r.error;
+    save();
+    if(dirHandle){ try{ await saveMemoMD(entry); } catch(_){} }
+    msgs.push(r.ok ? '✅ 노션 전송 완료' : '⚠ 노션 전송 실패(로컬엔 저장됨): '+r.error);
+  }
+  toast(msgs.join(' / '));
+  if(isEdit) cancelMemoEdit();
+}
+function editMemo(id){
+  const m = DATA.memos.find(x=>x.id===id);
+  if(!m) return;
+  editingMemoId = id;
+  loadMemoCatSelect();
+  document.getElementById('memo-cat').value = m.cat||'';
+  document.getElementById('memo-date').value = m.date||'';
+  document.getElementById('memo-title').value = m.title||'';
+  document.getElementById('memo-phone').value = m.phone||'';
+  document.getElementById('memo-content').value = m.content||'';
+  document.getElementById('memo-save-btn').textContent = '💾 메모 수정 완료';
+  document.getElementById('memo-cancel-edit').style.display = 'inline';
+}
+function cancelMemoEdit(){
+  editingMemoId = null;
+  document.getElementById('memo-title').value=''; document.getElementById('memo-content').value='';
+  document.getElementById('memo-save-btn').textContent = '💾 메모 저장';
+  document.getElementById('memo-cancel-edit').style.display = 'none';
+}
+function renderMemoList(){
+  const el = document.getElementById('memo-list');
+  if(!el) return;
+  let memos = DATA.memos || [];
+  if(memoFilter !== 'all') memos = memos.filter(m=>m.cat===memoFilter);
+  if(memos.length===0){ el.innerHTML='<div class="empty">메모가 없습니다.</div>'; return; }
+  el.innerHTML = memos.map(m=>`
+    <div class="entry">
+      <div class="entry-top">
+        <div>
+          <span style="font-size:11px;background:var(--ink);color:#fff;padding:2px 8px;border-radius:3px;font-weight:600;">${esc(m.cat)}</span>
+          ${m.title?`<span class="entry-loc" style="margin-left:8px;">${esc(m.title)}</span>`:''}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="entry-date">${m.date||''}</span>
+          <button class="btn btn-sm" onclick="editMemo('${m.id}')">수정</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteMemo('${m.id}')">삭제</button>
+        </div>
+      </div>
+      <div class="entry-body" style="margin-top:8px;">${esc(m.content)}</div>
+    </div>`).join('');
+}
+function deleteMemo(id){
+  if(!confirm('이 메모를 삭제할까요?')) return;
+  DATA.memos = DATA.memos.filter(m=>m.id!==id);
+  save(); renderMemoList(); toast('삭제됐습니다');
+}
+
+// ══════════════════════════════════════════════════════
+// 기존 JSON 가져오기 (예전 앱 데이터 마이그레이션)
+// ══════════════════════════════════════════════════════
+async function importJSON(file){
+  if(!file) return;
+  if(!dirHandle){ toast('먼저 옵시디언 폴더를 선택해주세요'); return; }
+  try{
+    const text = await file.text();
+    const imported = JSON.parse(text);
+    let count = 0;
+    for(const e of (imported.entries||[])){
+      const exists = DATA.entries.find(x=>x.id===e.id);
+      const entry = Object.assign({}, e, {_imported:true, _notionSynced:e._notionSynced||false});
+      if(!exists) DATA.entries.push(entry); else Object.assign(exists, entry);
+      await saveEntryMD(entry);
+      count++;
+    }
+    for(const m of (imported.memos||[])){
+      const exists = DATA.memos.find(x=>x.id===m.id);
+      const memo = Object.assign({}, m, {_imported:true});
+      if(!exists) DATA.memos.push(memo); else Object.assign(exists, memo);
+      await saveMemoMD(memo);
+      count++;
+    }
+    if(imported.memoCats){
+      imported.memoCats.forEach(c=>{ if(!DATA.memoCats.includes(c)) DATA.memoCats.push(c); });
+    }
+    save();
+    loadLocDatalist(); renderHistory(); loadMemoCatSelect(); renderMemoList();
+    toast(`✅ ${count}개 항목을 가져와 옵시디언 폴더에 저장했습니다`);
+  } catch(e){ toast('가져오기 실패: '+e.message); }
+}
+</script>
+</body>
+</html>
