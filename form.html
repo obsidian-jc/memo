@@ -82,12 +82,12 @@ input[type=file]{display:none;}
 .btn-send:disabled{background:#333;color:#666;}
 
 /* 토스트 */
-.toast{position:fixed;top:calc(60px + env(safe-area-inset-top));left:50%;
-  transform:translateX(-50%) translateY(-8px);background:#fff;color:#111;
-  padding:10px 20px;border-radius:22px;font-size:14px;font-weight:600;
-  box-shadow:0 4px 20px rgba(0,0,0,.4);opacity:0;transition:all .22s;
-  white-space:nowrap;z-index:99;pointer-events:none;}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast{position:fixed;top:calc(60px + env(safe-area-inset-top));left:16px;right:16px;
+  background:#fff;color:#111;
+  padding:12px 18px;border-radius:16px;font-size:13px;font-weight:600;line-height:1.4;
+  box-shadow:0 4px 20px rgba(0,0,0,.4);opacity:0;transform:translateY(-8px);transition:all .22s;
+  white-space:normal;word-break:keep-all;z-index:99;pointer-events:none;text-align:left;}
+.toast.show{opacity:1;transform:translateY(0);}
 
 /* 설정 시트 */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;
@@ -409,7 +409,7 @@ input[type=file]{display:none;}
     const el=document.getElementById('toast');
     el.textContent=msg;el.className=`toast show`;
     clearTimeout(toastTimer);
-    const duration = type==='err' ? 6000 : 2800;
+    const duration = type==='err' ? 9000 : 2800;
     toastTimer=setTimeout(()=>el.classList.remove('show'),duration);
   }
 
