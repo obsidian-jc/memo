@@ -276,6 +276,7 @@ input[type=file]{display:none;}
 
     let allOk = true;
     let newPageId = null;
+    let inboxErrorMsg = '';
 
     // 글 전체를 하나의 항목으로만 저장 (쪼개지 않음) — "시설관리일지" DB에 구조화된 항목으로 생성
     try{
@@ -285,8 +286,15 @@ input[type=file]{display:none;}
       });
       const resJson = await res.json().catch(()=>({}));
       if(!res.ok) allOk=false;
-      if(resJson && resJson.notion && resJson.notion.pageId) newPageId = resJson.notion.pageId;
-    }catch(e){ allOk=false; }
+      if(resJson && resJson.notion){
+        if(resJson.notion.pageId) newPageId = resJson.notion.pageId;
+        if(!resJson.notion.ok){
+          const d = resJson.notion.detail;
+          const detailMsg = d && d.message ? d.message : (typeof d === 'string' ? d : '');
+          inboxErrorMsg = `노션 저장 실패: ${resJson.notion.error || ''}${detailMsg ? ' — '+detailMsg : ''}`;
+        }
+      }
+    }catch(e){ allOk=false; inboxErrorMsg = '노션 저장 중 네트워크 오류: '+e.message; }
 
     // 사진 전송 — 방금 생성된 항목(newPageId)에 바로 첨부
     const files = pendingFiles.filter(Boolean);
@@ -319,7 +327,7 @@ input[type=file]{display:none;}
       document.querySelectorAll('.thumb').forEach(el=>el.remove());
       document.getElementById('btn-send').disabled = true;
     } else {
-      toast(photoErrorMsg || '일부 항목 저장에 실패했습니다. Worker를 확인해주세요','err');
+      toast(inboxErrorMsg || photoErrorMsg || '일부 항목 저장에 실패했습니다. Worker를 확인해주세요','err');
       document.getElementById('btn-send').disabled = false;
     }
   });
@@ -400,7 +408,9 @@ input[type=file]{display:none;}
   function toast(msg,type='info'){
     const el=document.getElementById('toast');
     el.textContent=msg;el.className=`toast show`;
-    clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2800);
+    clearTimeout(toastTimer);
+    const duration = type==='err' ? 6000 : 2800;
+    toastTimer=setTimeout(()=>el.classList.remove('show'),duration);
   }
 
   if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
