@@ -41,20 +41,23 @@ textarea{
 textarea:focus{outline:none;border-color:#555;}
 textarea::placeholder{color:#444;}
 
-/* 분류 미리보기 */
-.preview{display:none;flex-direction:column;gap:6px;}
+/* 분류 선택 */
+.preview{display:none;flex-direction:column;gap:8px;}
 .preview.show{display:flex;}
 .preview-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
-.preview-items{display:flex;flex-direction:column;gap:5px;}
-.pi{
-  display:flex;align-items:flex-start;gap:8px;background:var(--s);
-  border:1px solid var(--line);border-radius:10px;padding:10px 12px;
-  border-left:3px solid var(--c,#555);
+.cat-row{display:flex;flex-wrap:wrap;gap:8px;}
+.cat-chip{
+  display:flex;align-items:center;gap:6px;background:var(--s);
+  border:1.5px solid var(--line);border-radius:20px;padding:8px 14px;
+  font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;
 }
-.pi .emoji{font-size:17px;line-height:1.3;flex-shrink:0;}
-.pi .right{flex:1;min-width:0;}
-.pi .cat{font-size:11px;font-weight:700;color:var(--c,#888);margin-bottom:2px;}
-.pi .txt{font-size:13.5px;color:var(--text);line-height:1.45;word-break:keep-all;}
+.cat-chip .emoji{font-size:15px;}
+.cat-chip.selected{color:#fff;border-color:var(--c,#555);background:var(--c,#555);}
+.preview-text{
+  background:var(--s);border:1px solid var(--line);border-radius:10px;
+  padding:10px 12px;font-size:13.5px;line-height:1.5;color:var(--text);
+  white-space:pre-wrap;word-break:keep-all;
+}
 
 /* 사진 */
 .photos{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 0;}
@@ -117,13 +120,14 @@ input[type=file]{display:none;}
 </div>
 
 <div class="input-area">
-  <textarea id="note" placeholder="편하게 쓰세요. 분류는 자동으로 해드립니다.
+  <textarea id="note" placeholder="편하게 쓰세요. 분류는 자동으로 추천해드립니다.
 예) 청관제 업체 내일 방문예정, 차량번호 12가3456, 담당자 김철수 010-1234-5678"></textarea>
 
-  <!-- 분류 미리보기 -->
+  <!-- 분류 선택 -->
   <div class="preview" id="preview">
-    <div class="preview-label">분류 미리보기</div>
-    <div class="preview-items" id="preview-items"></div>
+    <div class="preview-label">분류 (탭해서 바꿀 수 있어요)</div>
+    <div class="cat-row" id="cat-row"></div>
+    <div class="preview-text" id="preview-text"></div>
   </div>
 
   <!-- 사진 -->
@@ -146,7 +150,7 @@ input[type=file]{display:none;}
     <h2>⚙️ 설정</h2>
     <label>Worker URL</label>
     <input type="url" id="cfg-worker" placeholder="https://your-worker.workers.dev">
-    <label>받은편지함 페이지 ID</label>
+    <label>받은편지함 페이지 ID (지금은 안 써도 됨, GitHub 백업용으로만 남겨둠)</label>
     <input type="text" id="cfg-page" placeholder="38a69164a5ee81dd87b8ee0524c60eaf">
     <div class="s-btns">
       <button class="s-cancel" id="cfg-cancel">취소</button>
@@ -201,110 +205,99 @@ input[type=file]{display:none;}
     }
   ];
 
-  // 텍스트를 문장 단위로 분리해서 각각 분류
+  // 전체 텍스트를 하나의 글로 보고, 가장 점수 높은 분류 하나만 추천
+  // (예전에는 문장 단위로 쪼개서 여러 분류로 나눠 보냈으나,
+  //  긴 글이 엉뚱하게 여러 조각으로 갈라지는 문제가 있어 "글 전체 = 항목 하나"로 변경함)
   function classify(text) {
-    // 문장 분리: 쉼표, 줄바꿈, 마침표 기준
-    const sentences = text.split(/[,\n.·]+/).map(s=>s.trim()).filter(s=>s.length>1);
-    
-    const results = []; // {cat, texts:[]}
-    const catMap = {};
+    let best = null;
+    let bestScore = 0;
 
-    sentences.forEach(s => {
-      let matched = null;
-      let maxScore = 0;
-
-      for(const cat of CATS) {
-        if(cat.key === 'inbox') continue;
-        let score = 0;
-        for(const kw of cat.kw) {
-          if(s.includes(kw)) score += kw.length; // 긴 키워드일수록 높은 점수
-        }
-        if(score > maxScore) { maxScore = score; matched = cat; }
+    for (const cat of CATS) {
+      if (cat.key === 'inbox') continue;
+      let score = 0;
+      for (const kw of cat.kw) {
+        if (text.includes(kw)) score += kw.length;
       }
-
-      // 전화번호 패턴 강제 감지
-      if(/\d{2,3}-\d{3,4}-\d{4}/.test(s) || /01\d{8,9}/.test(s.replace(/-/g,''))) {
-        matched = CATS.find(c=>c.key==='contact');
-      }
-
-      const cat = matched || CATS.find(c=>c.key==='inbox');
-      if(!catMap[cat.key]) { catMap[cat.key] = {...cat, texts:[]}; }
-      catMap[cat.key].texts.push(s);
-    });
-
-    // 결과가 없으면 전체를 받은편지함으로
-    if(Object.keys(catMap).length === 0) {
-      const inbox = CATS.find(c=>c.key==='inbox');
-      catMap['inbox'] = {...inbox, texts:[text.trim()]};
+      if (score > bestScore) { bestScore = score; best = cat; }
     }
 
-    return Object.values(catMap);
+    // 전화번호 패턴이 있으면 우선적으로 연락처로 분류
+    if (/\d{2,3}-\d{3,4}-\d{4}/.test(text) || /01\d{8,9}/.test(text.replace(/-/g, ''))) {
+      best = CATS.find(c => c.key === 'contact');
+    }
+
+    return best || CATS.find(c => c.key === 'inbox');
   }
 
   // ── 상태 ──
-  let classified = []; // [{cat, texts:[]}]
+  let selectedCat = null;
   let pendingFiles = [];
 
   // ── 분류 확인 버튼 ──
   document.getElementById('btn-analyze').addEventListener('click', ()=>{
     const txt = document.getElementById('note').value.trim();
     if(!txt){ toast('내용을 먼저 입력해주세요','err'); return; }
-    classified = classify(txt);
-    renderPreview();
+    selectedCat = classify(txt);
+    renderPreview(txt);
     document.getElementById('btn-send').disabled = false;
-    toast('분류 완료! 내용 확인 후 저장하세요','ok');
+    toast('분류 추천 완료! 다르면 탭해서 바꾸세요','ok');
   });
 
-  function renderPreview(){
-    const box = document.getElementById('preview-items');
-    box.innerHTML = classified.map(c=>`
-      <div class="pi" style="--c:${c.color}">
-        <span class="emoji">${c.emoji}</span>
-        <div class="right">
-          <div class="cat">${c.name}</div>
-          <div class="txt">${c.texts.map(t=>escHtml(t)).join('<br>')}</div>
-        </div>
-      </div>`).join('');
+  function renderPreview(txt){
+    const row = document.getElementById('cat-row');
+    row.innerHTML = CATS.map(c => `
+      <button type="button" class="cat-chip${selectedCat && selectedCat.key===c.key?' selected':''}"
+        style="--c:${c.color}" data-key="${c.key}">
+        <span class="emoji">${c.emoji}</span>${c.name}
+      </button>`).join('');
+
+    row.querySelectorAll('.cat-chip').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        selectedCat = CATS.find(c=>c.key===btn.dataset.key);
+        row.querySelectorAll('.cat-chip').forEach(b=>b.classList.remove('selected'));
+        btn.classList.add('selected');
+      });
+    });
+
+    document.getElementById('preview-text').textContent = txt;
     document.getElementById('preview').classList.add('show');
   }
-
-  function escHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
   // ── 저장 버튼 ──
   document.getElementById('btn-send').addEventListener('click', async()=>{
     const workerUrl = localStorage.getItem('fc-worker');
     const pageId    = localStorage.getItem('fc-page');
-    if(!workerUrl||!pageId){ toast('⚙️ 설정에서 Worker URL과 페이지 ID를 먼저 입력해주세요','err'); return; }
-    if(!classified.length){ toast('분류 확인을 먼저 눌러주세요','err'); return; }
+    if(!workerUrl){ toast('⚙️ 설정에서 Worker URL을 먼저 입력해주세요','err'); return; }
+    const txt = document.getElementById('note').value.trim();
+    if(!selectedCat || !txt){ toast('분류 확인을 먼저 눌러주세요','err'); return; }
 
     document.getElementById('btn-send').disabled = true;
     toast('노션에 저장 중...','info');
 
-    const timeStr = `${p(now.getHours())}:${p(now.getMinutes())}`;
     let allOk = true;
+    let newPageId = null;
 
-    for(const c of classified){
-      const header = `${c.emoji} [${c.name}] ${now.getFullYear()}.${p(now.getMonth()+1)}.${p(now.getDate())} ${timeStr}`;
-      const body = c.texts.join(' / ');
-      const line = `${header} — ${body}`;
-      try{
-        const res = await fetch(workerUrl.replace(/\/$/,'')+'/notion-inbox',{
-          method:'POST',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({pageId,text:line})
-        });
-        if(!res.ok) allOk=false;
-      }catch(e){ allOk=false; }
-    }
+    // 글 전체를 하나의 항목으로만 저장 (쪼개지 않음) — "시설관리일지" DB에 구조화된 항목으로 생성
+    try{
+      const res = await fetch(workerUrl.replace(/\/$/,'')+'/notion-inbox',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({pageId,text:txt,category:selectedCat.key})
+      });
+      const resJson = await res.json().catch(()=>({}));
+      if(!res.ok) allOk=false;
+      if(resJson && resJson.notion && resJson.notion.pageId) newPageId = resJson.notion.pageId;
+    }catch(e){ allOk=false; }
 
-    // 사진 전송
+    // 사진 전송 — 방금 생성된 항목(newPageId)에 바로 첨부
     const files = pendingFiles.filter(Boolean);
     let photoErrorMsg = '';
     if(files.length){
-      const caption = classified.map(c=>c.texts.join(' ')).join(' ').slice(0,60);
+      const caption = txt.slice(0,60);
       for(const f of files){
         try{
           const fd=new FormData();
           fd.append('pageId',pageId);fd.append('caption',caption);fd.append('file',f,f.name);
+          if(newPageId) fd.append('targetPageId', newPageId);
           const pres = await fetch(workerUrl.replace(/\/$/,'')+'/notion-photo',{method:'POST',body:fd});
           if(!pres.ok){
             allOk=false;
@@ -317,16 +310,18 @@ input[type=file]{display:none;}
     }
 
     if(allOk){
-      toast(`${classified.length}개 항목을 노션에 저장했습니다 ✓`,'ok');
+      toast(`저장했습니다 (${selectedCat.name}) ✓`,'ok');
       document.getElementById('note').value='';
-      classified=[];pendingFiles=[];
+      selectedCat=null;pendingFiles=[];
       document.getElementById('preview').classList.remove('show');
-      document.getElementById('preview-items').innerHTML='';
+      document.getElementById('cat-row').innerHTML='';
+      document.getElementById('preview-text').textContent='';
       document.querySelectorAll('.thumb').forEach(el=>el.remove());
+      document.getElementById('btn-send').disabled = true;
     } else {
       toast(photoErrorMsg || '일부 항목 저장에 실패했습니다. Worker를 확인해주세요','err');
+      document.getElementById('btn-send').disabled = false;
     }
-    document.getElementById('btn-send').disabled = false;
   });
 
   // ── 사진 ──
@@ -335,8 +330,9 @@ input[type=file]{display:none;}
     Array.from(e.target.files).forEach(addFile);e.target.value='';
   });
 
-  // 이미지를 최대 1600px, JPEG 75% 품질로 리사이즈/압축 (용량 5~10배 감소 → 업로드 속도 개선)
-  async function compressImage(file, maxDim=1600, quality=0.75){
+  // 이미지를 최대 1280px, JPEG 65% 품질로 리사이즈/압축
+  // (원본 대비 대략 15~25% 용량으로 줄어듦 — 미리보기 용도로는 충분한 화질)
+  async function compressImage(file, maxDim=1280, quality=0.65){
     const bitmap = await createImageBitmap(file);
     let { width, height } = bitmap;
     if (Math.max(width, height) > maxDim) {
